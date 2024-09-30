@@ -1,0 +1,70 @@
+﻿@page "/proprietary/deviations"
+@using FjordTours.App.DistributorApi.Components
+@using FjordTours.Channel.Distributor2.Client.DistributorApi.Proprietary.Contracts
+@using FjordTours.Channel.Distributor2.Common.DistributorApi.Constants
+@using FjordTours.Channel.Distributor2.Common.DistributorApi.Dtos.DistributorApi.Deviations
+@inherits AppProtectedPage
+
+<h1>Proprietary Api - Deviations</h1>
+
+@if (HasAccessToEndpointCategory(EndpointConstants.Deviations))
+{
+    if (_isLoading)
+    {
+        <MudProgressCircular Color="Color.Primary"
+                             Size="Size.Large"
+                             Indeterminate="true" />
+    }
+    else if (_deviations is null)
+    {
+        <MudAlert Severity="Severity.Info">
+            No current deviations.
+        </MudAlert>
+    }
+    else
+    {
+        <MudGrid>
+            <MudItem xs="12">
+                <MudTable Items="_deviations.OrderBy(d => d.Name)"
+                          Hover="true"
+                          Breakpoint="Breakpoint.Sm">
+                    <HeaderContent>
+                        <MudTh>Name</MudTh>
+                        <MudTh>State</MudTh>
+                        <MudTh>More</MudTh>
+                    </HeaderContent>
+                    <RowTemplate>
+                        <MudTd DataLabel="Id">@context.Name</MudTd>
+                        <MudTd DataLabel="State">@context.State</MudTd>
+                        <MudTd DataLabel="Details"><MudLink Href="@($"/proprietary/deviation/{context.Id}")">Details</MudLink></MudTd>
+                    </RowTemplate>
+                </MudTable>
+            </MudItem>
+        </MudGrid>
+    }
+}
+else
+{
+    <MudAlert Severity="Severity.Warning">Sorry, distributor does not seem to have access to this functionality.</MudAlert>
+}
+
+@code {
+
+    [Inject]
+    IApiContract ApiClient { get; set; } = default!;
+
+    [Parameter]
+    public Guid DeviationId { get; set; }
+
+    bool _isLoading = false;
+    IReadOnlyCollection<DeviationSummaryDto>? _deviations { get; set; } = null;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _isLoading = true;
+        var deviationsResult = await ApiClient.GetCurrentDeviationsAsync();
+        _deviations = deviationsResult?.Value;
+        _isLoading = false;
+    }
+
+}

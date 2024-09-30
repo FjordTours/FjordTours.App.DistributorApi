@@ -1,0 +1,151 @@
+﻿@page "/octo/products"
+@using FjordTours.App.DistributorApi.Components
+@using FjordTours.App.DistributorApi.Infrastructure.Extensions
+@using FjordTours.Channel.Distributor2.Client.DistributorApi.Octo.Contracts
+@using FjordTours.Channel.Distributor2.Client.DistributorApi.Proprietary.Contracts
+@using FjordTours.Channel.Distributor2.Common.DistributorApi.Constants
+@using FjordTours.OCTO.Common.Dtos.Products
+@inherits AppProtectedPage
+
+<h1>OCTO API - Products</h1>
+
+@if (HasAccessToEndpointCategory(EndpointConstants.ProductCatalogActivity))
+{
+    if (_isLoading)
+    {
+        <MudProgressCircular Color="Color.Primary"
+                             Size="Size.Large"
+                             Indeterminate="true" />
+    }
+    else if (_products is null ||
+             !_products.Any())
+    {
+        <MudAlert Severity="Severity.Info">
+            Products not found.
+        </MudAlert>
+    }
+    else
+    {
+        <MudGrid>
+            @foreach (var product in _products)
+            {
+                var color = product.Id.StartsWith("activity")
+                    ? Color.Primary
+                    : Color.Info;
+                var abbr = product.Id.StartsWith("activity")
+                    ? "A"
+                    : "B";
+                <MudItem xs="3">
+                    <MudCard style="min-height: 100px;">
+                        <MudCardHeader>
+                            <CardHeaderAvatar>
+                                <MudAvatar Color="color">@abbr</MudAvatar>
+                            </CardHeaderAvatar>
+                            <CardHeaderContent>
+                                <MudText Typo="Typo.h6">@product.InternalName</MudText>
+                                <MudText Typo="Typo.button">@product.Id</MudText>
+                            </CardHeaderContent>
+                        </MudCardHeader>
+                        <MudCardContent>
+                            <MudText>SKU / Reference</MudText>
+                            <MudText Typo="Typo.button">@product.SKU.ToHyphenIfNullOrEmpty()</MudText>
+
+                            <MudText>Locale</MudText>
+                            <MudText Typo="Typo.button">@product.Locale.ToHyphenIfNullOrEmpty()</MudText>
+
+                            <MudText>Time Zone</MudText>
+                            <MudText Typo="Typo.button">@product.TimeZone.ToHyphenIfNullOrEmpty()</MudText>
+
+                            <MudText>Allow Freesale</MudText>
+                            <MudText Typo="Typo.button">@product.AllowFreesale.ToString()</MudText>
+
+                            <MudText>Instant Confirmation</MudText>
+                            <MudText Typo="Typo.button">@product.InstantConfirmation.ToString()</MudText>
+
+                            <MudText>Availability Required</MudText>
+                            <MudText Typo="Typo.button">@product.AvailabilityRequired.ToString()</MudText>
+
+                            <MudText>Availability Type</MudText>
+                            <MudText Typo="Typo.button">@product.AvailabilityType.ToString()</MudText>
+
+                            <MudText>Delivery Formats</MudText>
+                            <MudText Typo="Typo.button">@string.Join("; ", product.DeliveryFormats.Select(f => f.ToString()))</MudText>
+
+                            <MudText>Delivery Methods</MudText>
+                            <MudText Typo="Typo.button">@string.Join("; ", product.DeliveryMethods.Select(f => f.ToString()))</MudText>
+
+                            <MudText>Options</MudText>
+                            <MudExpansionPanels>
+                                @foreach (var option in product.Options)
+                                {
+                                    <MudExpansionPanel>
+                                        <TitleContent>
+                                            <MudText Typo="Typo.button">@option.InternalName.ToHyphenIfNullOrEmpty()</MudText>
+                                            <MudLink Href="@($"/octo/calendar/{product.Id}/{option.Id}")">Availability Calendar</MudLink>
+                                        </TitleContent>
+                                        <ChildContent>
+                                            <MudText>Id</MudText>
+                                            <MudText Typo="Typo.button">@option.Id.ToHyphenIfNullOrEmpty()</MudText>
+
+                                            <MudText>Name</MudText>
+                                            <MudText Typo="Typo.button">@option.InternalName.ToHyphenIfNullOrEmpty()</MudText>
+
+                                            <MudText>Is Default</MudText>
+                                            <MudText Typo="Typo.button">@option.IsDefault.ToString()</MudText>
+
+                                            <MudText>SKU / Reference</MudText>
+                                            <MudText Typo="Typo.button">@option.SKU.ToHyphenIfNullOrEmpty()</MudText>
+
+                                            <MudText>Local Start Times</MudText>
+                                            <MudText Typo="Typo.button">@string.Join("; ", option.AvailabilityLocalStartTimes)</MudText>
+
+                                            <MudText>Cancellation Cutoff</MudText>
+                                            <MudText Typo="Typo.button">@option.CancellationCutoff.ToHyphenIfNullOrEmpty()</MudText>
+
+                                            <MudText>Cancellation Cutoff Amount</MudText>
+                                            <MudText Typo="Typo.button">@option.CancellationCutoffAmount.ToString()</MudText>
+
+                                            <MudText>Cancellation Cutoff Unit</MudText>
+                                            <MudText Typo="Typo.button">@option.CancellationCutoffUnit.ToString()</MudText>
+
+                                            <MudText>Required Contact Fields</MudText>
+                                            <MudText Typo="Typo.button">@string.Join("; ", option.RequiredContactFields)</MudText>
+
+                                            <MudText>Restrictions - Min / Max Units</MudText>
+                                            <MudText Typo="Typo.button">@option.Restrictions.MinUnits.ToString() / @option.Restrictions.MaxUnits.ToString()</MudText>
+
+                                            <MudText>Units</MudText>
+                                            <MudText Typo="Typo.button">@string.Join("; ", option.Units.Select(u => $"{u.InternalName} - {u.Type.ToString()} ({u.Id})"))</MudText>
+                                        </ChildContent>
+                                    </MudExpansionPanel>
+                                }
+                            </MudExpansionPanels>
+                        </MudCardContent>
+                    </MudCard>
+                </MudItem>
+            }
+        </MudGrid>
+    }
+}
+else
+{
+    <MudAlert Severity="Severity.Warning">Sorry, distributor does not seem to have access to this functionality.</MudAlert>
+}
+
+@code {
+
+    [Inject]
+    IOctoContract OctoClient { get; set; } = default!;
+
+    bool _isLoading = false;
+    IEnumerable<ProductDto>? _products { get; set; } = null;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        _isLoading = true;
+        var productsResult = await OctoClient.GetProductsAsync();
+        _products = productsResult;
+        _isLoading = false;
+    }
+
+}

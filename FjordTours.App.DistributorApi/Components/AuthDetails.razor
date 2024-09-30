@@ -1,0 +1,56 @@
+﻿
+@inherits ComponentBase
+
+<h3>Auth Details for Distributor Api</h3>
+
+<MudPaper Class="pa-4">
+    @if (loading)
+    {
+        <MudProgressCircular Color="Color.Primary"
+                             Size="Size.Large"
+                             Indeterminate="true" />
+    }
+    else
+    {
+        <MudForm @ref="@form"
+                 @bind-IsValid="@success">
+            <MudTextField T="string"
+                          Label="Base Address"
+                          @bind-Value="@DistributorApiAppConfig.BaseAddress"
+                          ReadOnly="true" />
+            <MudTextField T="string"
+                          Label="OCPM Subscription Key"
+                          @bind-Value="@DistributorApiAppConfig.OcpApimSubscriptionKey"
+                          Required="true"
+                          RequiredError="OCPM subscription key is required!" />
+            <MudTextField T="string"
+                          Label="Client Id"
+                          Required="true"
+                          @bind-Value="@DistributorApiAppConfig.DistributorApiClientId"
+                          RequiredError="Client id is required!" />
+            <MudTextField T="string"
+                          Label="Client Secret"
+                          @bind-Value="@DistributorApiAppConfig.DistributorApiClientSecret"
+                          Required="true"
+                          RequiredError="Client secret is required!" />
+        </MudForm>
+    }
+</MudPaper>
+
+<MudPaper Class="pa-4 mt-4">
+    <MudButton Variant="Variant.Filled" 
+               Color="Color.Primary" 
+               Disabled="@loading"
+               DisableElevation="true" 
+               OnClick="@(() => Authenticate())">
+        Validate
+    </MudButton>
+
+    <MudButton Variant="Variant.Filled"
+               Color="Color.Secondary"
+               Disabled="@loading"
+               DisableElevation="true"
+               OnClick="@(() => Clear())">
+        Clear
+    </MudButton>
+</MudPaper>

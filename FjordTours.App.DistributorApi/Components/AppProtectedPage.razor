@@ -1,0 +1,30 @@
+﻿@using FjordTours.App.DistributorApi.Infrastructure.Constants
+@using FjordTours.App.DistributorApi.Infrastructure.State
+@using FjordTours.Channel.Distributor2.Common.DistributorApi.Constants
+
+@inherits ComponentBase
+
+@code {
+
+    [Inject]
+    NavigationManager NavigationManager { get; set; } = default!;
+
+    [Inject]
+    internal AppState AppState { get; set; } = default!;
+
+    protected override void OnInitialized()
+    {
+        if (AppState?.DistributorProfile is null)
+            NavigationManager.NavigateTo(PagePathConstants.Home);
+    }
+
+    protected bool HasAccessToEndpointCategory(string endpointCategoryKey)
+    {
+        var endpointCategory = AppState.PingApiDetails?.EndpointCategories.FirstOrDefault(c => 
+            c.CategoryKey == EndpointConstants.AvailabilityActivity);
+        if (endpointCategory is null) 
+            return false;
+        return endpointCategory.IsEnabled;
+    }
+
+}

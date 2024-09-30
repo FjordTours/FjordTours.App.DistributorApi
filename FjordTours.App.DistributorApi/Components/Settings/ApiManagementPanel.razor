@@ -1,0 +1,118 @@
+﻿@using FjordTours.App.DistributorApi.Infrastructure.Extensions
+@using FjordTours.App.DistributorApi.Infrastructure.State
+@using FjordTours.Channel.Distributor2.Client.DistributorApi.Proprietary.Contracts
+@using FjordTours.Channel.Distributor2.Common.DistributorApi.Dtos.DistributorApi.Management.ApiClients
+
+<h3>Api Status</h3>
+
+@if (AppState.PingApiDetails is null)
+{
+    <MudAlert Severity="Severity.Warning">No data to show.</MudAlert>
+}
+else
+{
+    <MudGrid>
+        <MudItem xs="12">
+            <MudText>Service Name</MudText>
+            <MudText Typo="Typo.button">@AppState.PingApiDetails.ServiceInformation.ServiceName.ToHyphenIfNullOrEmpty()</MudText>
+        </MudItem>
+
+        <MudItem xs="12">
+            <MudText>Service Version</MudText>
+            <MudText Typo="Typo.button">@AppState.PingApiDetails.ServiceInformation.ServiceVersion.ToHyphenIfNullOrEmpty()</MudText>
+        </MudItem>
+
+        <MudItem xs="12">
+            <MudText>Distributor Api Enabled</MudText>
+            <MudText Typo="Typo.button">@AppState.PingApiDetails.DistributorApiInformation?.IsDistributorApiEnabled.ToString().ToHyphenIfNullOrEmpty()</MudText>
+        </MudItem>
+
+        <MudItem xs="12">
+            <MudText>Has Api Gateway Subscription</MudText>
+            <MudText Typo="Typo.button">@AppState.PingApiDetails.ApiGatewayInformation?.HasSubscription.ToString().ToHyphenIfNullOrEmpty()</MudText>
+        </MudItem>
+
+        <MudItem xs="12">
+            <MudText>Current Client - Client Id</MudText>
+            <MudText Typo="Typo.button">@AppState.PingApiDetails.ClientInformation?.ClientId.ToString().ToHyphenIfNullOrEmpty()</MudText>
+        </MudItem>
+
+        <MudItem xs="12">
+            <MudText>Current Client - Client Id</MudText>
+            <MudText Typo="Typo.button">@AppState.PingApiDetails.ClientInformation?.ClientName.ToHyphenIfNullOrEmpty()</MudText>
+        </MudItem>
+
+        <MudItem xs="12">
+            <MudText>Endpoint Categories</MudText>
+            @foreach (var category in AppState.PingApiDetails.EndpointCategories)
+            {
+                var color = category.IsEnabled
+                    ? Color.Success
+                    : Color.Error;
+                <MudChip Color="color">@category.CategoryKey</MudChip>
+            }
+        </MudItem>
+
+    </MudGrid>
+}
+
+<h3>Api Clients</h3>
+
+@if (_isLoading)
+{
+    <MudProgressCircular Color="Color.Primary"
+                         Size="Size.Large"
+                         Indeterminate="true" />
+}
+else if (_apiClients is null ||
+         !_apiClients.Any())
+{
+    <MudAlert Severity="Severity.Warning">No data to show.</MudAlert>
+}
+else
+{
+    <MudGrid>
+        <MudItem xs="12">
+            <MudTable Items="_apiClients.OrderBy(x => x.ClientId)"
+                      Hover="true"
+                      Breakpoint="Breakpoint.Sm">
+                <HeaderContent>
+                    <MudTh>Client Id</MudTh>
+                    <MudTh>Client Name</MudTh>
+                    <MudTh>Secret Expiry</MudTh>
+                    <MudTh>Claims</MudTh>
+                </HeaderContent>
+                <RowTemplate>
+                    <MudTd DataLabel="Client Id">@context.ClientId</MudTd>
+                    <MudTd DataLabel="Client Name">@context.ClientName</MudTd>
+                    <MudTd DataLabel="Secret Expiry">@context.SecretExpiryTimestamp.ToString()</MudTd>
+                    <MudTd DataLabel="Claims">@string.Join("; ", context.Claims)</MudTd>
+                </RowTemplate>
+            </MudTable>
+        </MudItem>
+    </MudGrid>
+}
+
+@code {
+
+    bool _isLoading = false;
+    IEnumerable<DistributorApiClientDto>? _apiClients { get; set; } = null;
+
+    [Inject]
+    internal AppState AppState { get; set; } = default!;
+
+    [Inject]
+    internal IApiContract ApiClient { get; set; } = default!;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (_apiClients is null)
+        {
+            _isLoading = true;
+            var clientsResult = await ApiClient.GetDistributorApiClientsAsync();
+            _apiClients = clientsResult?.Value;
+            _isLoading = false;
+        }
+    }
+
+}

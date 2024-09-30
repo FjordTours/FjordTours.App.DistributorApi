@@ -1,0 +1,56 @@
+﻿@page "/dashboard"
+
+@using FjordTours.App.DistributorApi.Components
+@using FjordTours.App.DistributorApi.Infrastructure.Extensions
+
+@inherits AppProtectedPage
+
+<PageTitle>Dashboard</PageTitle>
+
+<h1>Dashboard</h1>
+
+@AppState?.DistributorProfile?.Name.ToHyphenIfNullOrEmpty()
+
+<h2>Proprietary Api</h2>
+
+<MudAlert Severity="Severity.Info">
+    Proprietary Api developed and provided by Fjord Tours.
+    Provides most flexibility, including management and configuration functionality.
+</MudAlert>
+
+<MudGrid>
+    <MudItem xs="6">
+        <MudCard>
+            <MudCardContent>
+                <MudText>User Management</MudText>
+                <MudText Typo="Typo.body2">
+                    The quick, brown fox jumps over a lazy dog.
+                </MudText>
+            </MudCardContent>
+            <MudCardActions>
+                <MudButton Variant="Variant.Text" 
+                           Color="Color.Primary">Try it</MudButton>
+            </MudCardActions>
+        </MudCard>
+    </MudItem>
+</MudGrid>
+
+
+
+<h2>OCTO Api</h2>
+
+<MudAlert Severity="Severity.Info">
+    OCTO is an industry standard for ours, activities & attractions.
+</MudAlert>
+
+
+
+<h2>OSDM Api</h2>
+
+<MudAlert Severity="Severity.Info">
+    OSDM is the Open Sales and Distribution Model developed by various European rail and public transport providers.
+</MudAlert>
+
+<MudAlert Severity="Severity.Warning">
+    Api is under development / experimental and support has not yet been added to this test / demo tool.
+</MudAlert>

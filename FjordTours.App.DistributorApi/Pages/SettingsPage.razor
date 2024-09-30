@@ -1,0 +1,34 @@
+﻿@page "/settings"
+
+@using FjordTours.App.DistributorApi.Components
+@using FjordTours.App.DistributorApi.Components.Settings
+
+@inherits AppProtectedPage
+
+<PageTitle>Settings</PageTitle>
+
+<h1>Settings</h1>
+
+<MudPaper Class="pa-16 ma-2" 
+          Elevation="3">
+    <MudTabs Elevation="2" 
+             Rounded="true" 
+             ApplyEffectsToContainer="true" 
+             PrevIcon="@Icons.Material.Filled.SkipPrevious"
+             NextIcon="@Icons.Material.Filled.SkipNext"
+             PanelClass="pa-6">
+
+        <MudTabPanel Text="General">
+            <PingApiDetailsPanel />
+        </MudTabPanel>
+
+        <MudTabPanel Text="Users Mgmt">
+            <UsersManagementPanel />
+        </MudTabPanel>
+
+        <MudTabPanel Text="Api Mgmt">
+            <ApiManagementPanel />
+        </MudTabPanel>
+
+    </MudTabs>
+</MudPaper>

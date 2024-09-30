@@ -1,0 +1,156 @@
+﻿@page "/proprietary/bundle/calendar/{ProductId:guid}/{ProductVariationId:guid}"
+@using FjordTours.App.DistributorApi.Components
+@using FjordTours.App.DistributorApi.Infrastructure.Extensions
+@using FjordTours.App.DistributorApi.Infrastructure.State
+@using FjordTours.Channel.Distributor2.Client.DistributorApi.Proprietary.Contracts
+@using FjordTours.Channel.Distributor2.Common.DistributorApi.Constants
+@using FjordTours.Channel.Distributor2.Common.DistributorApi.Dtos.DistributorApi.MasterData
+@using FjordTours.Channel.Distributor2.Common.DistributorApi.Dtos.DistributorApi.Transaction.BundleAvailabilityCalendar
+@inherits AppProtectedPage
+
+<h1>Proprietary Api - Activity - Availability Calendar</h1>
+
+@if (HasAccessToEndpointCategory(EndpointConstants.AvailabilityActivity))
+{
+    <MudGrid>
+        <MudItem xs="12">
+            <MudAutocomplete Required="true"
+                             T="SegmentDto"
+                             Class="ma-2"
+                             Label="Segment"
+                             AutoFocus="true"
+                             ValueChanged="@(s => OnSegmentChanged(s))"
+                             Value="@_selectedSegment"
+                             ToStringFunc="@(x => x == null ? "" : $"{x.Name}")"
+                             SearchFunc="@SearchForSegment">
+                <ItemTemplate Context="segment">
+                    <MudText>
+                        @segment.Name
+                    </MudText>
+                </ItemTemplate>
+            </MudAutocomplete>
+        </MudItem>
+        @if (_isLoading)
+        {
+            <MudItem xs="12">
+                <MudProgressCircular Color="Color.Primary"
+                                     Size="Size.Large"
+                                     Indeterminate="true" />
+            </MudItem>
+        }
+        else if (_availCalendar is null)
+        {
+            <MudItem xs="12">
+                <MudAlert Severity="Severity.Info">
+                    No activity availability data to show.
+                </MudAlert>
+            </MudItem>
+        }
+        else
+        {
+            <MudItem xs="12">
+                <MudTable Items="_availCalendar.DailyAvailability.OrderBy(d => d.Date)"
+                          Hover="true"
+                          Breakpoint="Breakpoint.Sm">
+                    <HeaderContent>
+                        <MudTh>Date</MudTh>
+                        <MudTh>Availability</MudTh>
+                        <MudTh>More</MudTh>
+                    </HeaderContent>
+                    <RowTemplate>
+                        <MudTd DataLabel="Date"><MudText Typo="Typo.button">@context.Date.ToDateString()</MudText></MudTd>
+                        <MudTd DataLabel="Available">
+                            <MudChip Color="@(context.UnitsAvailable > 0 ? Color.Success : Color.Error)">
+                                @context.UnitsAvailable
+                            </MudChip>
+                        </MudTd>
+                        <MudTd DataLabel="More">
+                            @if (context.UnitsAvailable > 0)
+                            {
+                                <MudLink Href="@($"/proprietary/bundle/offers/{ProductId}/{context.Date.ToUrlDateString()}")">Get Offers</MudLink>
+                            }
+                            else
+                            {
+                                <span>N/A</span>
+                            }
+                        </MudTd>
+                    </RowTemplate>
+                </MudTable>
+            </MudItem>
+        }
+    </MudGrid>
+}
+else
+{
+    <MudAlert Severity="Severity.Warning"> Sorry, distributor does not seem to have access to this functionality.</MudAlert>
+}
+
+@code {
+
+    [Inject]
+    AppState AppSate { get; set; } = default!;
+
+    [Inject]
+    IApiContract ApiClient { get; set; } = default!;
+
+    [Parameter]
+    public Guid ProductId { get; set; }
+
+    [Parameter]
+    public Guid ProductVariationId { get; set; }
+
+    bool _isLoading = false;
+    SegmentDto? _selectedSegment = null;
+    BundleAvailabilityCalendarDto? _availCalendar { get; set; } = null;
+    DateTimeOffset? _selectedDate = null;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        _selectedSegment = AppState.Segments?.FirstOrDefault();
+        await SearchCalendar();
+    }
+
+    protected async Task SearchCalendar()
+    {
+        _isLoading = true;
+        StateHasChanged();
+        try
+        {
+            if (_selectedSegment is not null &&
+                ProductId != Guid.Empty)
+            {
+                var currentMonth = DateTime.Now;
+                var startOfMonth = new DateTime(currentMonth.Year, currentMonth.Month, 1,
+                                                0, 0, 0, currentMonth.Kind);
+                var availResult = await ApiClient.GetBundleAvailabilityCalendarAsync(
+                    new BundleAvailabilityCalendarRequest() {
+                            ProductId = ProductId,
+                            ProductVariationId = ProductVariationId,
+                            SegmentId = _selectedSegment.Id,
+                            DepartureDate = startOfMonth
+                        });
+                _availCalendar = availResult?.Value;
+            }
+        }
+        catch (Exception ex)
+        {
+            _availCalendar = null;
+            Console.WriteLine(ex);
+        }
+        _isLoading = false;
+        StateHasChanged();
+    }
+
+    private Task<IEnumerable<SegmentDto>> SearchForSegment(string word)
+        {
+            return Task.FromResult(AppState.Segments!.ToList().FuzzySearch(x => x.Name, word));
+        }
+
+
+    private async Task OnSegmentChanged(SegmentDto newSegment)
+    {
+        _selectedSegment = newSegment;
+        await SearchCalendar();
+    }
+
+}

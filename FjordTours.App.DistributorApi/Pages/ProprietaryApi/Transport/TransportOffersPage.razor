@@ -1,0 +1,541 @@
+﻿@page "/proprietary/transport/options/{ProductId:guid}"
+@using FjordTours.App.DistributorApi.Components
+@using FjordTours.App.DistributorApi.Infrastructure.Constants
+@using FjordTours.App.DistributorApi.Infrastructure.Extensions
+@using FjordTours.App.DistributorApi.Infrastructure.State
+@using FjordTours.Channel.Distributor2.Client.DistributorApi.Proprietary.Contracts
+@using FjordTours.Channel.Distributor2.Common.DistributorApi.Constants
+@using FjordTours.Channel.Distributor2.Common.DistributorApi.Dtos.DistributorApi.MasterData
+@using FjordTours.Channel.Distributor2.Common.DistributorApi.Dtos.DistributorApi.Product
+@using FjordTours.Channel.Distributor2.Common.DistributorApi.Dtos.DistributorApi.Transaction.AcceptOffer
+@using FjordTours.Channel.Distributor2.Common.DistributorApi.Dtos.DistributorApi.Transaction.Common
+@using FjordTours.Channel.Distributor2.Common.DistributorApi.Dtos.DistributorApi.Transaction.TransportDepartureOptions
+@using FjordTours.Channel.Distributor2.Common.DistributorApi.Dtos.DistributorApi.Transaction.TransportOffer
+@using FjordTours.Channel.Distributor2.Common.DistributorApi.Enums
+@inherits AppProtectedPage
+
+<h1>Proprietary Api - Transport - Availability</h1>
+
+@if (HasAccessToEndpointCategory(EndpointConstants.AvailabilityTransport) ||
+     HasAccessToEndpointCategory(EndpointConstants.BookingFlow))
+{
+    if (AppState.Products is null ||
+        !AppState.Products.Any())
+    {
+        <MudAlert Severity="Severity.Warning">No data to show.</MudAlert>
+    }
+    else
+    {
+        <MudGrid>
+            <MudItem xs="12">
+                <h2>Metadata</h2>
+                @if (_offerContainerId is not null)
+                {
+                    <MudText Typo="Typo.h6">Offer Container Id</MudText>
+                    <MudText Typo="Typo.button">@_offerContainerId.ToString()</MudText>                
+                }
+                <MudAlert Severity="Severity.Info">
+                    Offers are searched for one adult.
+                </MudAlert>
+            </MudItem>
+            <MudItem xs="12">
+                <h2>Search Parameters</h2>
+            </MudItem>
+            <MudItem xs="3">
+                <MudAutocomplete T="LocationDto" 
+                                 Label="Origin" 
+                                 @bind-Value="_selectedOrigin" 
+                                 SearchFunc="@SearchOrigin"
+                                 ToStringFunc="@(e => e==null ? null : $"{e.Name}")" />
+            </MudItem>
+            <MudItem xs="3">
+                <MudAutocomplete T="LocationDto"
+                                 Label="Destination"
+                                 @bind-Value="_selectedDestination"
+                                 SearchFunc="@SearchDestination"
+                                 ToStringFunc="@(e => e==null ? null : $"{e.Name}")" />
+            </MudItem>
+            <MudItem xs="3">
+                <MudDatePicker @ref="_formDatePicker"
+                               @bind-Date="_travelDate"
+                               Class="ma-2"
+                               Label="Date"
+                               Editable="true"
+                               Margin="Margin.Dense"
+                               Mask="@(new DateMask("dd.MM.yyyy"))"
+                               DateFormat="dd.MM.yyyy"
+                               HelperText="DD.MM.YYYY"
+                               HelperTextOnFocus=true
+                               Validation="@ValidateDate" />
+            </MudItem>
+            <MudItem xs="3">
+                <MudAutocomplete T="SegmentDto"
+                                 Label="Segment"
+                                 @bind-Value="_selectedSegment"
+                                 SearchFunc="@SearchSegment"
+                                 ToStringFunc="@(e => e==null ? null : $"{e.Name}")" />
+            </MudItem>
+            <MudItem xs="12">
+                <MudButton Variant="Variant.Filled"
+                           Color="Color.Primary"
+                           Disabled="@_isSearchingDepartureOptions"
+                           DisableElevation="true"
+                           OnClick="@(() => Search())">
+                    Search
+                </MudButton>
+            </MudItem>
+
+            <MudItem xs="12">
+            </MudItem>
+            <MudItem xs="12">
+                <MudDivider />
+            </MudItem>
+            <MudItem xs="12">
+            </MudItem>
+
+            <MudItem xs="12">
+                <h2>Results</h2>
+            </MudItem>
+            @if (_isSearchingDepartureOptions)
+            {
+                <MudItem xs="12">
+                    <MudProgressCircular Color="Color.Primary"
+                                         Size="Size.Large"
+                                         Indeterminate="true" />
+                </MudItem>
+            }
+            else if (_departureOptions is not null &&
+                     _departureOptions.Any())
+            {
+                foreach (var option in _departureOptions)
+                {
+                    <MudItem xs="12">
+                        <MudPaper Class="pa-16 ma-2"
+                                  Square="true"
+                                  Outlined="true">
+                            <MudGrid>
+                                <MudItem xs="12">
+                                    <h3>@option.DepartureCode</h3> <br />
+                                    <MudChip>@option.MeansOfTransport</MudChip>
+                                    @if (option.IsAffectedByDeviation)
+                                    {
+                                        <MudChip Color="Color.Warning">Affected By Deviation</MudChip>
+                                    }
+                                    @if (!string.IsNullOrEmpty(option.AlternativeMeansOfTransport))
+                                    {
+                                        <MudChip Icon="@Icons.Material.Filled.CompareArrows"
+                                                 Color="Color.Warning">@option.AlternativeMeansOfTransport</MudChip>
+                                    }
+                                    @if (option.IsCancelled)
+                                    {
+                                        <MudChip Color="Color.Error">Cancelled</MudChip>
+                                    }
+                                </MudItem>
+
+                                <MudItem xs="12">
+                                    <MudText Typo="Typo.button">Offer Container Id</MudText>
+                                    <MudText Typo="Typo.body1">@option.OfferContainerId?.ToString()?.ToHyphenIfNullOrEmpty()</MudText>
+                                </MudItem>
+
+                                <MudItem xs="5">
+                                    <MudText Typo="Typo.button">@GetLocationName(option.OriginLocationId)</MudText> <br />
+                                    <MudText Typo="Typo.caption">@GetTime(option.ScheduledTimeOfDeparture)</MudText>
+                                </MudItem>
+                                <MudItem xs="2">
+                                    <MudIcon Icon="@Icons.Material.Filled.ArrowForwardIos" />
+                                </MudItem>
+                                <MudItem xs="5">
+                                    <MudText Typo="Typo.button">@GetLocationName(option.DestinationLocationId)</MudText> <br />
+                                    <MudText Typo="Typo.caption">@GetTime(option.ScheduledTimeOfArrival)</MudText>
+                                </MudItem>
+                                @if (option.LineInfos.Any())
+                                {
+                                    <MudItem xs="12">
+                                        <MudAlert Severity="Severity.Warning">
+                                            @foreach (var info in option.LineInfos)
+                                            {
+                                                <MudText Typo="Typo.button">@info.Title</MudText>
+                                                <MudChip>@info.Type</MudChip>
+                                                <MudText Typo="Typo.caption">@info.ValidFrom.ToDateTimeString() - @info.ValidTo.ToDateTimeString()</MudText>
+                                                <MudText Typo="Typo.caption">@info.Body</MudText>
+                                            }
+                                        </MudAlert>
+                                    </MudItem>
+                                }
+                                @if (HasAccessToEndpointCategory(EndpointConstants.BookingFlow))
+                                {
+                                    @if (option.IsGettingOffers)
+                                    {
+                                        <MudItem xs="12">
+                                            <MudProgressCircular Color="Color.Primary"
+                                                                 Size="Size.Large"
+                                                                 Indeterminate="true" />
+                                        </MudItem>
+                                    }
+                                    else if (option.Offers is not null &&
+                                             option.Offers.Any())
+                                    {
+                                        @foreach (var travelClass in option.TravelClasses)
+                                        {
+                                            var travelClassOffers = option.Offers.Where(o => o.TravelClassId == travelClass);
+                                            <MudItem xs="12">
+                                                <MudText Typo="Typo.button"><MudChip>@GetTravelClassName(travelClass)</MudChip></MudText>
+                                                @if (travelClassOffers.Any())
+                                                {
+                                                    <MudPaper Elevation="3">
+                                                        <MudGrid>
+                                                            @foreach (var offer in travelClassOffers)
+                                                            {
+                                                                <MudItem xs="6">
+                                                                    <MudText>Offer Id</MudText>
+                                                                    <MudText Typo="Typo.button">@offer.OfferId?.ToString()?.ToHyphenIfNullOrEmpty()</MudText>
+                                                                </MudItem>
+                                                                <MudItem xs="6">
+                                                                    <MudText>Retail Price</MudText>
+                                                                    <MudText Typo="Typo.button"><MudChip>@offer!.RetailPrice?.ToMoneyString()</MudChip></MudText>
+
+                                                                    <MudText>Commission</MudText>
+                                                                    <MudText Typo="Typo.button">@offer!.DistributorCommission?.ToMoneyString()</MudText>
+                                                                </MudItem>
+
+                                                                <MudItem xs="6">
+                                                                    <MudText Typo="Typo.button">
+                                                                        <MudChip Color="@(offer.Availability?.MinimumAvailable > 0 ? Color.Success : Color.Error)">
+                                                                            @offer.Availability?.MinimumAvailable
+                                                                        </MudChip>
+                                                                    </MudText>
+
+                                                                    <MudText>Sales Fare</MudText>
+                                                                    <MudText Typo="Typo.button">@offer.SalesFare?.Code (v: @offer.SalesFare?.SalesFareVersion)</MudText>
+                                                                </MudItem>
+
+                                                                @if (offer.TransportLegs is not null &&
+                                                                     offer.TransportLegs.Any())
+                                                                {
+                                                                    <MudItem xs="12">
+                                                                        <MudAlert Severity="Severity.Warning">
+                                                                            This journey has multiple legs!
+                                                                        </MudAlert>
+
+                                                                        <MudTimeline TimelineOrientation="TimelineOrientation.Horizontal"
+                                                                                     TimelinePosition="TimelinePosition.Top"
+                                                                                     DisableModifiers="false">
+                                                                            @foreach (var leg in offer.TransportLegs)
+                                                                            {
+                                                                                <MudTimelineItem Elevation="25"
+                                                                                                 Variant="Variant.Filled">
+                                                                                    <MudCard Outlined="true" 
+                                                                                             Elevation="25">
+                                                                                        <MudCardContent>
+                                                                                            <MudText Typo="Typo.h6">@leg.DepartureCode</MudText>
+                                                                                            <MudGrid>
+                                                                                                <MudItem xs="5">
+                                                                                                    <MudText Typo="Typo.button">@GetLocationName(leg.OriginLocationId)</MudText> <br />
+                                                                                                    <MudText Typo="Typo.caption">@GetTime(leg.DepartureDateTime)</MudText>
+                                                                                                </MudItem>
+                                                                                                <MudItem xs="2">
+                                                                                                    <MudIcon Icon="@Icons.Material.Filled.ArrowForwardIos" />
+                                                                                                </MudItem>
+                                                                                                <MudItem xs="5">
+                                                                                                    <MudText Typo="Typo.button">@GetLocationName(leg.DestinationLocationId)</MudText> <br />
+                                                                                                    <MudText Typo="Typo.caption">@GetTime(leg.ArrivalDateTime)</MudText>
+                                                                                                </MudItem>
+                                                                                            </MudGrid>
+                                                                                            <MudText Typo="Typo.body2"><MudChip>@GetTravelClassName(leg.TravelClassId)</MudChip></MudText>
+                                                                                        </MudCardContent>
+                                                                                    </MudCard>
+                                                                                </MudTimelineItem>
+                                                                            }
+                                                                        </MudTimeline>
+                                                                    </MudItem>
+                                                                }
+
+                                                                <MudItem xs="6">
+                                                                    <MudButton Variant="Variant.Filled"
+                                                                               Color="Color.Primary"
+                                                                               Disabled="_isAccepting"
+                                                                               OnClick="@(() => Accept(option, offer))">
+                                                                        Accept
+                                                                    </MudButton>
+                                                                </MudItem>
+                                                            }
+                                                        </MudGrid>
+                                                    </MudPaper>
+                                                }
+                                                else
+                                                {
+                                                    <MudAlert Severity="Severity.Info">
+                                                        No offers available for the travel class.
+                                                    </MudAlert>
+                                                }
+                                            </MudItem>
+                                        }
+                                    }
+                                    else
+                                    {
+                                        <MudItem xs="12">
+                                            <MudAlert Severity="Severity.Info">No offers available at the moment.</MudAlert>
+                                        </MudItem>
+                                    }
+                                }
+                                else
+                                {
+                                    <MudItem xs="12">
+                                        <MudAlert Severity="Severity.Info">Distributor does not have access to offers.</MudAlert>
+                                    </MudItem>
+                                }
+                            </MudGrid>
+                        </MudPaper>
+                    </MudItem>
+                }
+            }
+            else
+            {
+                <MudAlert Severity="Severity.Warning">
+                    No departures to show.
+                </MudAlert>
+            }
+        </MudGrid>
+    }
+}
+else
+{
+    <MudAlert Severity="Severity.Warning">Sorry, distributor does not seem to have access to this functionality.</MudAlert>
+}
+
+@code {
+
+    [Inject]
+    IApiContract ApiClient { get; set; } = default!;
+
+    [Inject]
+    NavigationManager NavigationManager { get; set; } = default!;
+
+    [Parameter]
+    public Guid ProductId { get; set; }
+
+    TransportProductDto? _product = null;
+    TransportLineDto? _line = null;
+    IEnumerable<LocationDto> _locations = new List<LocationDto>();
+    LocationDto? _selectedOrigin = null;
+    LocationDto? _selectedDestination = null;
+
+    bool _isInitializing = true;
+    MudForm _form { get; set; } = default!;
+    MudDatePicker _formDatePicker { get; set; } = default!;
+    DateTime? _travelDate = DateTime.Now.AddDays(7);
+
+    SegmentDto? _selectedSegment = null;
+    bool _isSearchingDepartureOptions { get; set; } = false;
+    List<DepartureOptionViewModel>? _departureOptions { get; set; } = null;
+
+    Guid? _offerContainerId = null;
+    bool _isAccepting = false;
+    Guid _correlationId = Guid.NewGuid();
+    string _distributorBookingReference = new string(Faker.Lorem.Letters(8).ToArray());
+    string _orderName = Faker.Lorem.Word();
+    string _firstName = Faker.Name.FirstName();
+    string _lastName = Faker.Name.LastName();
+    string _email = Faker.User.Email();
+    string _phone = $"+47{Faker.Number.RandomNumber(111111111, 999999999)}";
+
+    protected override async void OnParametersSet()
+    {
+        _isInitializing = true;
+        StateHasChanged();
+
+        _product = AppState.TransportProducts!.FirstOrDefault(p => p.Id == ProductId);
+        if (_product is not null)
+        {
+            var lineResult = await ApiClient.GetTransportLineAsync(_product.LineId);
+            _line = lineResult?.Value;
+            if (_line is not null)
+            {
+                _locations = AppState.Locations!.Where(l => _line.Locations.Any(ll => ll.ReferenceLocationId == l.Id));
+            }
+        }
+
+        _isInitializing = false;
+        StateHasChanged();
+    }
+
+    Task<IEnumerable<LocationDto>> SearchOrigin(string value)
+    {
+        // if text is null or empty, show complete list
+        if (string.IsNullOrEmpty(value))
+            return Task.FromResult(_locations);
+        return Task.FromResult(_locations.Where(x => x.Name.Contains(
+            value, StringComparison.InvariantCultureIgnoreCase)));
+    }
+
+    Task<IEnumerable<LocationDto>> SearchDestination(string value)
+    {
+        // if text is null or empty, show complete list
+        if (string.IsNullOrEmpty(value))
+            return Task.FromResult(_locations);
+        return Task.FromResult(_locations.Where(x => x.Name.Contains(
+            value, StringComparison.InvariantCultureIgnoreCase)));
+    }
+
+    Task<IEnumerable<SegmentDto>> SearchSegment(string value)
+    {
+        // if text is null or empty, show complete list
+        if (string.IsNullOrEmpty(value))
+            return Task.FromResult(AppState.Segments!.AsEnumerable());
+        return Task.FromResult(AppState.Segments!.Where(x => x.Name.Contains(
+            value, StringComparison.InvariantCultureIgnoreCase)));
+    }
+
+    private Func<DateTime?, string> ValidateDate = (date) =>
+    {
+        if (date == null)
+        {
+            return "Required";
+        }
+
+        if (DateTime.Now.Date > date)
+        {
+            return "Date can't be from the past";
+        }
+        return "";
+    };
+
+    async Task Search()
+    {
+        _isSearchingDepartureOptions = true;
+        StateHasChanged();
+        // await Task.WhenAll(
+        //     _form.Validate(),
+        //     _formDatePicker.Validate());
+        if (_selectedOrigin is null ||
+            _selectedDestination is null ||
+            _selectedSegment is null ||
+            _travelDate is null)
+        {
+            _isSearchingDepartureOptions = false;
+            return;
+        }
+
+        var candidates = await ApiClient.GetTransportDepartureOptionsAsync(
+            new TransportDepartureOptionsRequest() {
+                OriginLocationId = _selectedOrigin!.Id,
+                DestinationLocationId = _selectedDestination!.Id,
+                    DepartureDate = _travelDate!.Value
+            });
+        if (candidates?.Value is null ||
+            !candidates.Value.Any())
+        {
+            _isSearchingDepartureOptions = false;
+            StateHasChanged();
+            return;
+        }
+
+        _departureOptions = candidates.Value
+            .Where(c => c.LineId == _product.LineId)
+            .Select(c => new DepartureOptionViewModel() {
+                LineId = c.LineId,
+                LineInfos = c.LineInfos,
+                DepartureCode = c.DepartureCode,
+                OriginLocationId = c.OriginLocationId,
+                ScheduledTimeOfDeparture = c.ScheduledTimeOfDeparture,
+                DestinationLocationId = c.DestinationLocationId,
+                ScheduledTimeOfArrival = c.ScheduledTimeOfArrival,
+                IsAffectedByDeviation = c.IsAffectedByDeviation,
+                IsCancelled = c.IsCancelled,
+                MeansOfTransport = c.MeansOfTransport,
+                AlternativeMeansOfTransport = c.AlternativeMeansOfTransport,
+                Legs = c.Legs,
+                TravelClasses = c.TravelClasses
+            })
+            .ToList();
+        _isSearchingDepartureOptions = false;
+        StateHasChanged();
+
+        if (HasAccessToEndpointCategory(EndpointConstants.BookingFlow) &&
+            _departureOptions is not null &&
+            _departureOptions.Any())
+        {
+            foreach (var departureOption in _departureOptions)
+            {
+                var offersResult = await ApiClient.GetTransportOffersAsync(
+                    new TransportOffersRequest() {
+                        SegmentId = _selectedSegment!.Id,
+                        OriginLocationId = _selectedOrigin.Id,
+                        DestinationLocationId = _selectedDestination.Id,
+                        DepartureDate = _travelDate.Value,
+                        DepartureCode = departureOption.DepartureCode,
+                        Travelers = new List<OffersRequestTravelerDto>() {
+                        new OffersRequestTravelerDto() {
+                            PaxRph = 0,
+                            TicketTypeId = DistributorApiConstants.Adult
+                        }
+                    }
+                });
+                var offerData = offersResult?.Value;
+                if (offerData is not null)
+                {
+                    departureOption.OfferContainerId = offerData.OfferContainerId;
+                    departureOption.Offers = offerData.Offers.ToList();
+                }
+                departureOption.IsGettingOffers = false;
+                StateHasChanged();
+            }
+            StateHasChanged();
+        }
+    }
+
+    async Task Accept(
+        DepartureOptionViewModel viewModel,
+        TransportOfferDto offer)
+    {
+        if (offer.OfferId is null)
+            return;
+        var holdResult = await ApiClient.AcceptOfferAsync(
+            new AcceptOfferRequest() { 
+                CorrelationId = _correlationId,
+                OfferContainerId = viewModel.OfferContainerId!.Value,
+                OfferId = offer.OfferId.Value,
+                OrderName = _orderName,
+                DistributorBookingReference = _distributorBookingReference,
+                AdministrativeContact = new AdministrativeContactDto() { 
+                    FirstName = _firstName,
+                    LastName = _lastName,
+                    Email = _email,
+                    MobilePhone = _phone,
+                    CountryId = AppConstants.NorwayCountryId
+                },
+                PropertyBag = new List<KeyValuePair<string, string>>()
+            });
+        NavigationManager.NavigateTo($"/proprietary/order/{viewModel.OfferContainerId}");
+    }
+
+    string GetLocationName(Guid locationId)
+    {
+        var location = AppState.Locations?.FirstOrDefault(l => l.Id == locationId);
+        return location is null ? "-" : location.Name;
+    }
+
+    string GetTime(DateTimeOffset? dateTime)
+    {
+        if (dateTime is null) return "-";
+        return dateTime.Value.ToTimeString();
+    }
+
+    string GetTravelClassName(Guid travelClassId)
+    {
+        var travelClass = AppState.TravelClasses?.FirstOrDefault(tc => tc.Id == travelClassId);
+        return travelClass is null ? "-" : travelClass.Name;
+    }
+
+    public record DepartureOptionViewModel : TransportDepartureOptionDto
+    {
+
+        public bool IsGettingOffers { get; set; } = true;
+
+        public Guid? OfferContainerId { get; set; } = null;
+
+        public List<TransportOfferDto>? Offers { get; set; } = null;
+
+    }
+
+}

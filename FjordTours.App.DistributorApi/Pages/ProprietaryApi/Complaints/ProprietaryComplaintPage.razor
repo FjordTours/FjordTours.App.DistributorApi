@@ -1,0 +1,62 @@
+﻿@page "/proprietary/complaint/{ComplaintId:guid}"
+@using FjordTours.App.DistributorApi.Components
+@using FjordTours.App.DistributorApi.Infrastructure.Extensions
+@using FjordTours.Channel.Distributor2.Client.DistributorApi.Proprietary.Contracts
+@using FjordTours.Channel.Distributor2.Common.DistributorApi.Constants
+@using FjordTours.Channel.Distributor2.Common.DistributorApi.Dtos.DistributorApi.Complaints
+@inherits AppProtectedPage
+
+<h1>Proprietary Api - Complaints</h1>
+
+@if (HasAccessToEndpointCategory(EndpointConstants.Complaints))
+{
+    if (_isLoading)
+    {
+        <MudProgressCircular Color="Color.Primary"
+                             Size="Size.Large"
+                             Indeterminate="true" />
+    }
+    else if (_complaint is null)
+    {
+        <MudAlert Severity="Severity.Info">
+            Complaint not found.
+        </MudAlert>
+    }
+    else
+    {
+        <MudGrid>
+            <MudItem xs="12">
+                <MudText>Source</MudText>
+                <MudText Typo="Typo.button">@_complaint?.Source.ToHyphenIfNullOrEmpty()</MudText>
+            </MudItem>
+            <MudItem xs="12">
+                <MudText>Source</MudText>
+                <MudText Typo="Typo.button">@_complaint?.Status.ToHyphenIfNullOrEmpty()</MudText>
+            </MudItem>
+        </MudGrid>
+    }
+}
+else
+{
+    <MudAlert Severity="Severity.Warning">Sorry, distributor does not seem to have access to this functionality.</MudAlert>
+}
+
+@code {
+
+    [Inject]
+    IApiContract ApiClient { get; set; } = default!;
+
+    [Parameter]
+    public Guid ComplaintId { get; set; }
+
+    bool _isLoading = false;
+    ComplaintDto? _complaint { get; set; } = null;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        _isLoading = true;
+        var complaintResult = await ApiClient.GetComplaintAsync(ComplaintId);
+        _complaint = complaintResult.Value;
+    }
+
+}

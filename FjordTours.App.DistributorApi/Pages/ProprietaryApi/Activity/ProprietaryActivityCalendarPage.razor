@@ -1,0 +1,101 @@
+﻿@page "/proprietary/activity/calendar/{ProductId:guid}"
+@using FjordTours.App.DistributorApi.Components
+@using FjordTours.App.DistributorApi.Infrastructure.Extensions
+@using FjordTours.App.DistributorApi.Infrastructure.State
+@using FjordTours.Channel.Distributor2.Client.DistributorApi.Proprietary.Contracts
+@using FjordTours.Channel.Distributor2.Common.DistributorApi.Constants
+@using FjordTours.Channel.Distributor2.Common.DistributorApi.Dtos.DistributorApi.MasterData
+@using FjordTours.Channel.Distributor2.Common.DistributorApi.Dtos.DistributorApi.Transaction.ActivityAvailabilityCalendar
+@inherits AppProtectedPage
+
+<h1>Proprietary Api - Activity - Availability Calendar</h1>
+
+@if (HasAccessToEndpointCategory(EndpointConstants.AvailabilityActivity))
+{
+    if (_isLoading)
+    {
+        <MudProgressCircular Color="Color.Primary"
+                             Size="Size.Large"
+                             Indeterminate="true" />
+    }
+    else if (_availCalendar is null)
+    {
+        <MudAlert Severity="Severity.Info" >
+            No activity availability data to show.
+        </MudAlert>
+    }
+    else
+    {
+        <MudTable Items="_availCalendar.DailyAvailability.OrderBy(d => d.Date)"
+                  Hover="true"
+                  Breakpoint="Breakpoint.Sm">
+            <HeaderContent>
+                <MudTh>Date</MudTh>
+                <MudTh>Availability</MudTh>
+                <MudTh>More</MudTh>
+            </HeaderContent>
+            <RowTemplate>
+                <MudTd DataLabel="Date"><MudText Typo="Typo.button">@context.Date.ToDateString()</MudText></MudTd>
+                <MudTd DataLabel="Available">
+                    <MudChip Color="@(context.UnitsAvailable > 0 ? Color.Success : Color.Error)">
+                        @context.UnitsAvailable
+                    </MudChip>
+                </MudTd>
+                <MudTd DataLabel="More">
+                    @if (context.UnitsAvailable > 0)
+                    {
+                        <MudLink Href="@($"/proprietary/activity/offers/{ProductId}/{context.Date.ToUrlDateString()}")">Get Offers</MudLink>
+                    }
+                    else
+                    {
+                        <span>N/A</span>
+                    }
+                </MudTd>
+            </RowTemplate>
+        </MudTable>
+    }
+}
+else
+{
+    <MudAlert Severity="Severity.Warning"> Sorry, distributor does not seem to have access to this functionality.</MudAlert >
+}
+
+@code {
+
+    [Inject]
+    AppState AppSate { get; set; } = default!;
+
+    [Inject]
+    IApiContract ApiClient { get; set; } = default!;
+
+    [Parameter]
+    public Guid ProductId { get; set; }
+
+    bool _isLoading = false;
+    SegmentDto? _selectedSegment = null;
+    ActivityAvailabilityCalendarDto? _availCalendar { get; set; } = null;
+    DateTimeOffset? _selectedDate = null;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        _isLoading = true;
+        _selectedSegment = AppState.Segments?.FirstOrDefault();
+        if (_selectedSegment is not null &&
+            ProductId != Guid.Empty)
+        {
+            var nextMonth = DateTime.Now.AddMonths(1);
+            var startOfNextMonth = new DateTime(nextMonth.Year, nextMonth.Month, 1,
+                                                0,0,0, nextMonth.Kind);
+            var availResult = await ApiClient.GetActivityAvailabilityCalendarAsync(
+                new ActivityAvailabilityCalendarRequest() {
+                    ProductId = ProductId,
+                    SegmentId = _selectedSegment.Id,
+                    DepartureDate = startOfNextMonth
+                });
+            _availCalendar = availResult?.Value;
+        }
+        _isLoading = false;
+        StateHasChanged();
+    }
+
+}

@@ -1,0 +1,27 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.11.35017.193
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FjordTours.App.DistributorApi", "FjordTours.App.DistributorApi\FjordTours.App.DistributorApi.csproj", "{E2449A41-3197-49BF-8413-F46670256BDE}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{A098B1BA-A56E-4EDB-A2F6-3A25CE13B184}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{E2449A41-3197-49BF-8413-F46670256BDE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E2449A41-3197-49BF-8413-F46670256BDE}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E2449A41-3197-49BF-8413-F46670256BDE}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E2449A41-3197-49BF-8413-F46670256BDE}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {2E5B31D1-9B9F-4F71-9E9D-BA11FC82D1A4}
+	EndGlobalSection
+EndGlobal

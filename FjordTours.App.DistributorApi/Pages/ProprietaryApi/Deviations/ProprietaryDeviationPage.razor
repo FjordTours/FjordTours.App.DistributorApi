@@ -1,0 +1,71 @@
+﻿@page "/proprietary/deviation/{DeviationId:guid}"
+@using FjordTours.App.DistributorApi.Components
+@using FjordTours.App.DistributorApi.Infrastructure.Extensions
+@using FjordTours.Channel.Distributor2.Client.DistributorApi.Proprietary.Contracts
+@using FjordTours.Channel.Distributor2.Common.DistributorApi.Constants
+@using FjordTours.Channel.Distributor2.Common.DistributorApi.Dtos.DistributorApi.Deviations
+@inherits AppProtectedPage
+
+<h1>Proprietary Api - Complaints</h1>
+
+@if (HasAccessToEndpointCategory(EndpointConstants.Deviations))
+{
+    if (_isLoading)
+    {
+        <MudProgressCircular Color="Color.Primary"
+                             Size="Size.Large"
+                             Indeterminate="true" />
+    }
+    else if (_deviation is null)
+    {
+        <MudAlert Severity="Severity.Info">
+            Deviation not found.
+        </MudAlert>
+    }
+    else
+    {
+        <MudGrid>
+            <MudItem xs="12">
+                <MudText>Name</MudText>
+                <MudText Typo="Typo.button">@_deviation?.Name.ToHyphenIfNullOrEmpty()</MudText>
+            </MudItem>
+            <MudItem xs="12">
+                <MudText>State</MudText>
+                <MudText Typo="Typo.button">@_deviation?.State.ToHyphenIfNullOrEmpty()</MudText>
+            </MudItem>
+            <MudItem xs="12">
+                <MudText>Period Type</MudText>
+                <MudText Typo="Typo.button">@_deviation?.PeriodType.ToHyphenIfNullOrEmpty()</MudText>
+            </MudItem>
+            <MudItem xs="12">
+                <MudText>From - To</MudText>
+                <MudText Typo="Typo.button">@_deviation?.PeriodFrom.ToDateTimeString() - @_deviation?.PeriodTo.ToDateTimeString()</MudText>
+            </MudItem>
+        </MudGrid>
+    }
+}
+else
+{
+    <MudAlert Severity="Severity.Warning">Sorry, distributor does not seem to have access to this functionality.</MudAlert>
+}
+
+@code {
+
+    [Inject]
+    IApiContract ApiClient { get; set; } = default!;
+
+    [Parameter]
+    public Guid DeviationId { get; set; }
+
+    bool _isLoading = false;
+    DeviationSummaryDto? _deviation { get; set; } = null;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _isLoading = true;
+        var deviationResult = await ApiClient.GetDeviationByIdAsync(DeviationId);
+        _deviation = deviationResult?.Value;
+        _isLoading = false;
+    }
+
+}

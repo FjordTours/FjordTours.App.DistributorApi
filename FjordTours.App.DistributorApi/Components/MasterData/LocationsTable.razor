@@ -1,0 +1,37 @@
+﻿@using FjordTours.App.DistributorApi.Infrastructure.Extensions
+@using FjordTours.App.DistributorApi.Infrastructure.State
+
+@if (AppState.Locations is null)
+{
+    <MudAlert Severity="Severity.Warning">No data to show.</MudAlert>
+}
+else
+{
+    <MudGrid>
+        <MudItem xs="12">
+            <MudTable Items="AppState.Locations.OrderBy(x => x.Name)"
+                      Hover="true"
+                      Breakpoint="Breakpoint.Sm">
+                <HeaderContent>
+                    <MudTh>Id</MudTh>
+                    <MudTh>Name</MudTh>
+                    <MudTh>IATA Code</MudTh>
+                    <MudTh>UIC Code</MudTh>
+                </HeaderContent>
+                <RowTemplate>
+                    <MudTd DataLabel="Id">@context.Id</MudTd>
+                    <MudTd DataLabel="Name">@context.Name</MudTd>
+                    <MudTd DataLabel="IATA Code">@context.IataCode.HyphenIfNullOrEmpty()</MudTd>
+                    <MudTd DataLabel="IATA Code">@context.UicCode.HyphenIfNullOrEmpty()</MudTd>
+                </RowTemplate>
+            </MudTable>
+        </MudItem>
+    </MudGrid>
+}
+
+@code {
+
+    [Inject]
+    internal AppState AppState { get; set; } = default!;
+
+}

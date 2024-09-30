@@ -1,0 +1,93 @@
+﻿@page "/proprietary/orders"
+@using FjordTours.App.DistributorApi.Components
+@using FjordTours.App.DistributorApi.Infrastructure.Extensions
+@using FjordTours.Channel.Distributor2.Client.DistributorApi.Proprietary.Contracts
+@using FjordTours.Channel.Distributor2.Common.DistributorApi.Constants
+@using FjordTours.Channel.Distributor2.Common.DistributorApi.Dtos.DistributorApi.Transaction.Order
+@using Humanizer
+@inherits AppProtectedPage
+
+<h1>Proprietary Api - Orders</h1>
+
+@if (HasAccessToEndpointCategory(EndpointConstants.BookingFlow))
+{
+    <MudAlert Severity="Severity.Info">
+        This shows the latest @TAKE_ORDERS orders from the last @DAYS_INTO_PAST days.
+    </MudAlert>
+    if (_isLoading)
+    {
+        <MudProgressCircular Color="Color.Primary"
+                             Size="Size.Large"
+                             Indeterminate="true" />
+    }
+    else if (_orders is null)
+    {
+        <MudAlert Severity="Severity.Info">
+            No current orders.
+        </MudAlert>
+    }
+    else
+    {
+        <MudGrid>
+            <MudItem xs="12">
+                <MudTable Items="_orders.OrderByDescending(d => d.CreatedTimestamp)"
+                          Hover="true"
+                          Breakpoint="Breakpoint.Sm">
+                    <HeaderContent>
+                        <MudTh>Created</MudTh>
+                        <MudTh>Reference</MudTh>
+                        <MudTh>Distributor</MudTh>
+                        <MudTh>States</MudTh>
+                        <MudTh>Data</MudTh>
+                        <MudTh>More</MudTh>
+                    </HeaderContent>
+                    <RowTemplate>
+                        <MudTd DataLabel="Created">
+                            @context.CreatedTimestamp.ToDateString() <br />
+                            <MudAlert Severity="Severity.Info">@context.CreatedTimestamp.Humanize()</MudAlert>
+                        </MudTd>
+                        <MudTd DataLabel="Reference">@context.Reference</MudTd>
+                        <MudTd DataLabel="Distributor">@context.Distributor?.Name.ToHyphenIfNullOrEmpty() / @context.PointOfSales.ToHyphenIfNullOrEmpty().ToUpper() / @context.Segment?.Name.ToHyphenIfNullOrEmpty().ToUpper()</MudTd>
+                        <MudTd DataLabel="State"><MudChip>@context.OrderState</MudChip> / <MudChip>@context.PaymentState</MudChip></MudTd>
+                        <MudTd DataLabel="Data">
+                            Order Name: @context.OrderName.ToHyphenIfNullOrEmpty()<br />
+                            Booking Ref: @context.DistributorBookingReference.ToHyphenIfNullOrEmpty()
+                        </MudTd>
+                        <MudTd DataLabel="Details"><MudLink Href="@($"/proprietary/order/{context.Id}")">Details</MudLink></MudTd>
+                    </RowTemplate>
+                </MudTable>
+            </MudItem>
+        </MudGrid>
+    }
+}
+else
+{
+    <MudAlert Severity="Severity.Warning">Sorry, distributor does not seem to have access to this functionality.</MudAlert>
+}
+
+@code { 
+
+    private const int TAKE_ORDERS = 20;
+    private const int DAYS_INTO_PAST = 7;
+
+    [Inject]
+    IApiContract ApiClient { get; set; } = default!;
+
+    bool _isLoading = false;
+    IEnumerable<OrderHeaderDto>? _orders { get; set; } = null;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _isLoading = true;
+        var ordersResult = await ApiClient.GetOrderHeadersAsync(
+            new GetOrderHeadersRequest() { 
+                BookingDateFrom = DateTimeOffset.Now.AddDays(-DAYS_INTO_PAST),
+                BookingDateTo = DateTimeOffset.Now,
+                Skip = 0,
+                Take = TAKE_ORDERS
+            });
+        _orders = ordersResult?.Value;
+        _isLoading = false;
+    }
+
+}

@@ -1,0 +1,281 @@
+﻿@page "/octo/booking/{BookingId}"
+@using FjordTours.App.DistributorApi.Components
+@using FjordTours.App.DistributorApi.Infrastructure.Extensions
+@using FjordTours.App.DistributorApi.Infrastructure.State
+@using System.Timers
+@using FjordTours.Channel.Distributor2.Client.DistributorApi.Octo.Contracts
+@using FjordTours.Channel.Distributor2.Common.DistributorApi.Constants
+@using FjordTours.OCTO.Common.Dtos.Booking
+@inherits AppProtectedPage
+@implements IDisposable
+
+<h1>OCTO Api - Booking</h1>
+
+@if (HasAccessToEndpointCategory(EndpointConstants.BookingFlow))
+{
+    if (_timerEnabled)
+    {
+        <MudAlert Severity="Severity.Info">
+            Booking will refresh every @REFRESH_EVERY_SECONDS seconds, up to @MAX_REFRESHES times.
+        </MudAlert>
+    }
+    else
+    {
+        <MudAlert Severity="Severity.Warning">
+            Booking auto-refresh is not active.
+        </MudAlert>
+    }
+
+    if (_isLoading)
+    {
+        <MudProgressCircular Color="Color.Primary"
+                             Size="Size.Large"
+                             Indeterminate="true" />
+    }
+    else if (_booking is null)
+    {
+        <MudAlert Severity="Severity.Info">
+            Booking data is not (yet) available.
+        </MudAlert>
+    }
+    else
+    {
+        <MudText>Booking Id</MudText>
+        <MudText Typo="Typo.button">@_booking.Id</MudText>
+
+        <MudText>UUID</MudText>
+        <MudText Typo="Typo.button">@_booking.UUID?.ToString().ToHyphenIfNullOrEmpty()</MudText>
+
+        <MudText>Availability Id (Offer Id)</MudText>
+        <MudText Typo="Typo.button">@_booking.AvailabilityId.ToString()</MudText>
+
+        <MudText>Reseller Reference</MudText>
+        <MudText Typo="Typo.button">@_booking.ResellerReference.ToHyphenIfNullOrEmpty()</MudText>
+
+        <MudText>Supplier Reference</MudText>
+        <MudText Typo="Typo.button">@_booking.SupplierReference.ToHyphenIfNullOrEmpty()</MudText>
+
+        <MudText>Status</MudText>
+        <MudText Typo="Typo.button"><MudChip>@_booking.Status.ToString()</MudChip></MudText>
+
+
+        <h3>Product</h3>
+
+        <MudText>Product Id</MudText>
+        <MudText Typo="Typo.button">@_booking.ProductId</MudText>
+
+        <MudText>Product Name</MudText>
+        <MudText Typo="Typo.button">@_booking.Product?.InternalName.ToHyphenIfNullOrEmpty()</MudText>
+
+        <MudText>Option Id</MudText>
+        <MudText Typo="Typo.button">@_booking.OptionId</MudText>
+
+        <MudText>Option Name</MudText>
+        <MudText Typo="Typo.button">@_booking.Option?.InternalName.ToHyphenIfNullOrEmpty()</MudText>
+
+
+        <h3>Contact</h3>
+
+        <MudText>Full Name</MudText>
+        <MudText Typo="Typo.button">@_booking.Contact.FullName.ToHyphenIfNullOrEmpty()</MudText>
+
+        <MudText>Email</MudText>
+        <MudText Typo="Typo.button">@_booking.Contact.EmailAddress.ToHyphenIfNullOrEmpty()</MudText>
+
+        <MudText>Phone</MudText>
+        <MudText Typo="Typo.button">@_booking.Contact.PhoneNumber.ToHyphenIfNullOrEmpty()</MudText>
+
+
+        <h3>Booking Data</h3>
+
+        <MudText>Unit Items</MudText>
+        @if (_booking.UnitItems.Any())
+        {
+            foreach (var unitItem in _booking.UnitItems)
+            {
+                <MudText>UUID: @unitItem.Uuid</MudText>
+                <MudText Typo="Typo.button">@unitItem.UnitId <MudChip>@unitItem.Status.ToString()</MudChip></MudText>
+            }
+        }
+        else
+        {
+            <MudAlert Severity="Severity.Info">No unit items.</MudAlert>
+        }
+
+        <MudText>Freesale</MudText>
+        <MudText Typo="Typo.button">@_booking.Freesale.ToYesNo()</MudText>
+
+        <MudText>Notes</MudText>
+        <MudText Typo="Typo.button">@_booking.Notes.ToHyphenIfNullOrEmpty()</MudText>
+
+
+        <h3>Cancellation</h3>
+
+        <MudText>Cancellable</MudText>
+        <MudText Typo="Typo.button">@_booking.Cancellable.ToYesNo()</MudText>
+
+        @if (_booking.Cancellation is not null)
+        {
+            <MudText>Refund</MudText>
+            <MudText Typo="Typo.button">@_booking.Cancellation.Refund.ToString()</MudText>
+
+            <MudText>Reason</MudText>
+            <MudText Typo="Typo.button">@_booking.Cancellation.Reason.ToHyphenIfNullOrEmpty()</MudText>
+
+            <MudText>Cancelled At</MudText>
+            <MudText Typo="Typo.button">@_booking.Cancellation.UtcCancelledAt?.ToDateTimeString().ToHyphenIfNullOrEmpty()</MudText>
+        }
+
+
+        <h3>Ticketing / Delivery</h3>
+
+        <MudText>Delivery Options</MudText>
+        <MudText Typo="Typo.button">
+            @if (_booking.DeliveryMethods.Any())
+            {
+                foreach (var dm in _booking.DeliveryMethods)
+                {
+                    <MudText Typo="Typo.button"><MudChip>@dm.ToString()</MudChip></MudText>
+                }
+            }
+            else
+            {
+                <MudAlert Severity="Severity.Info">No delivery methods.</MudAlert>
+            }
+        </MudText>
+
+        <MudText>Voucher</MudText>
+        @if (_booking.Voucher is not null)
+        {
+            <MudText Typo="Typo.button">Redemption Method: @_booking.Voucher.RedemptionMethod.ToString()</MudText> <br />
+            <MudText Typo="Typo.button">Redeemed At: @_booking.Voucher.UtcRedeemedAt?.ToDateTimeString().ToHyphenIfNullOrEmpty()</MudText>
+            <br />
+            @if (_booking.Voucher.DeliveryOptions.Any())
+            {
+                @foreach (var delOption in _booking.Voucher.DeliveryOptions)
+                {
+                    <MudText Typo="Typo.button">Delivery Format: @delOption.DeliveryFormat.ToString()</MudText> <br />
+                    <MudText Typo="Typo.button">Delivery Value: @delOption.DeliveryValue.ToHyphenIfNullOrEmpty()</MudText>
+                }
+            }
+            else
+            {
+                <MudAlert Severity="Severity.Info">No delivery options.</MudAlert>
+            }
+        }
+        else
+        {
+            <MudAlert Severity="Severity.Info">No voucher has been issued so far.</MudAlert>
+        }
+
+        <h3>Timestamps</h3>
+
+        <MudText>Created</MudText>
+        <MudText Typo="Typo.button">@_booking.UtcCreatedAt.ToDateTimeString()</MudText>
+
+        <MudText>Updated</MudText>
+        <MudText Typo="Typo.button">@_booking.UtcUpdatedAt?.ToDateTimeString()?.ToHyphenIfNullOrEmpty()</MudText>
+
+        <MudText>Expires</MudText>
+        <MudText Typo="Typo.button">@_booking.UtcExpiresAt?.ToDateTimeString()?.ToHyphenIfNullOrEmpty()</MudText>
+
+        <MudText>Confirmed</MudText>
+        <MudText Typo="Typo.button">@_booking.UtcConfirmedAt?.ToDateTimeString()?.ToHyphenIfNullOrEmpty()</MudText>
+
+        <MudText>Redeemed</MudText>
+        <MudText Typo="Typo.button">@_booking.UtcRedeemedAt?.ToDateTimeString()?.ToHyphenIfNullOrEmpty()</MudText>
+    }
+}
+else
+{
+    <MudAlert Severity="Severity.Warning"> Sorry, distributor does not seem to have access to this functionality.</MudAlert>
+}
+
+@code {
+
+    const int REFRESH_EVERY_SECONDS = 5;
+    const int MAX_REFRESHES = 12;
+
+    [Inject]
+    AppState AppSate { get; set; } = default!;
+
+    [Inject]
+    IOctoContract OctoClient { get; set; } = default!;
+
+    [Parameter]
+    public string BookingId { get; set; }
+
+    bool _isLoading = false;
+    bool _timerEnabled = true;
+    Timer _timer = new Timer(1000);
+    int _nextRefreshInSeconds = REFRESH_EVERY_SECONDS;
+    int _refreshesCount = 0;
+    BookingDto? _booking = null;
+
+    protected override void OnInitialized()
+    {
+        _timer.Elapsed += OnTimer;
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        await LoadOrderAsync();
+        _timer.Enabled = true;
+        _timerEnabled = true;
+    }
+
+    async Task LoadOrderAsync(bool silently = false)
+    {
+        if (!silently)
+        {
+            _isLoading = true;
+            StateHasChanged();
+        }
+
+        try
+        {
+            _booking = await OctoClient.GetBookingAsync(
+                BookingId);
+        }
+        catch (Exception ex)
+        {
+            _booking = null;
+        }
+
+        if (!silently)
+        {
+            _isLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    async void OnTimer(Object? source, ElapsedEventArgs e)
+    {
+        _nextRefreshInSeconds--;
+        if (_nextRefreshInSeconds == 0)
+        {
+            await LoadOrderAsync(true);
+            _nextRefreshInSeconds = REFRESH_EVERY_SECONDS;
+            _refreshesCount++;
+            InvokeAsync(StateHasChanged);
+        }
+        if (_refreshesCount > MAX_REFRESHES)
+        {
+            StopTimer();
+        }
+    }
+
+    void IDisposable.Dispose()
+    {
+        StopTimer();
+    }
+
+    void StopTimer()
+    {
+        _timer.Enabled = false;
+        _timer.Elapsed -= OnTimer;
+        _timerEnabled = false;
+        StateHasChanged();
+    }
+
+}

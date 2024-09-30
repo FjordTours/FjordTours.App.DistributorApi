@@ -1,0 +1,105 @@
+﻿@page "/octo/calendar/{ProductId}/{OptionId}"
+@using FjordTours.App.DistributorApi.Components
+@using FjordTours.App.DistributorApi.Infrastructure.Extensions
+@using FjordTours.App.DistributorApi.Infrastructure.State
+@using FjordTours.Channel.Distributor2.Client.DistributorApi.Octo.Contracts
+@using FjordTours.Channel.Distributor2.Common.DistributorApi.Constants
+@using FjordTours.OCTO.Common.Dtos.Availability
+@inherits AppProtectedPage
+
+<h1>OCTO Api - Availability Calendar</h1>
+
+@if (HasAccessToEndpointCategory(EndpointConstants.AvailabilityActivity))
+{
+    if (_isLoading)
+    {
+        <MudProgressCircular Color="Color.Primary"
+                             Size="Size.Large"
+                             Indeterminate="true" />
+    }
+    else if (_availCalendar is null)
+    {
+        <MudAlert Severity="Severity.Info">
+            No activity availability data to show.
+        </MudAlert>
+    }
+    else
+    {
+        <MudTable Items="_availCalendar.OrderBy(d => d.LocalDate)"
+                  Hover="true"
+                  Breakpoint="Breakpoint.Sm">
+            <HeaderContent>
+                <MudTh>Date</MudTh>
+                <MudTh>Availability</MudTh>
+                <MudTh>Opening Hours</MudTh>
+                <MudTh>More</MudTh>
+            </HeaderContent>
+            <RowTemplate>
+                <MudTd DataLabel="Date"><MudText Typo="Typo.button">@context.LocalDate.ToDateString()</MudText></MudTd>
+                <MudTd DataLabel="Available">
+                    <MudChip Color="@(context.UnitsAvailable > 0 ? Color.Success : Color.Error)">
+                        @context.UnitsAvailable
+                    </MudChip>
+                    <MudText Typo="Typo.button">@context.AvailabilityStatus.ToString()</MudText>
+                </MudTd>
+                <MudTd DataLabel="Opening Hours">
+                    <MudText Typo="Typo.button">@(string.Join("; ", context.OpeningHours))</MudText>
+                </MudTd>
+                <MudTd DataLabel="More">
+                    <MudLink Href="@($"/octo/activity/offers/{ProductId}/{OptionId}/{context.LocalDate.ToApiDateString()}")">Get Offers</MudLink>@* 
+                    @if (context.UnitsAvailable > 0)
+                    {
+                        <MudLink Href="@($"/octo/activity/offers/{ProductId}/{OptionId}/{context.LocalDate.ToApiDateString()}")">Get Offers</MudLink>
+                    }
+                    else
+                    {
+                        <span>N/A</span>
+                    } *@
+                </MudTd>
+            </RowTemplate>
+        </MudTable>
+    }
+}
+else
+{
+    <MudAlert Severity="Severity.Warning"> Sorry, distributor does not seem to have access to this functionality.</MudAlert>
+}
+
+@code {
+
+    [Inject]
+    AppState AppSate { get; set; } = default!;
+
+    [Inject]
+    IOctoContract OctoClient { get; set; } = default!;
+
+    [Parameter]
+    public string ProductId { get; set; } = default!;
+
+    [Parameter]
+    public string OptionId { get; set; } = default!;
+
+    bool _isLoading = false;
+    IEnumerable<CalendarDayResultDto>? _availCalendar { get; set; } = null;
+    DateTimeOffset? _selectedDate = null;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _isLoading = true;
+        if (!string.IsNullOrEmpty(ProductId) &&
+            !string.IsNullOrEmpty(OptionId))
+        {
+            var nextMonth = DateTime.Now.AddMonths(1);
+            var startOfNextMonth = new DateTime(nextMonth.Year, nextMonth.Month, 1,
+                                                0, 0, 0, nextMonth.Kind);
+            var availResult = await OctoClient.GetCalendarAsync(
+                ProductId,
+                OptionId,
+                DateOnly.FromDateTime(startOfNextMonth));
+            _availCalendar = availResult;
+        }
+        _isLoading = false;
+        StateHasChanged();
+    }
+
+}

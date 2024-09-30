@@ -1,0 +1,22 @@
+﻿@page "/"
+
+@using FjordTours.App.DistributorApi.Components
+
+@inherits AppComponent
+
+<PageTitle>Initializing...</PageTitle>
+
+<h1>Initializing...</h1>
+
+<MudContainer>
+    @if (HasValidConfig())
+    {
+        <MudProgressCircular Color="Color.Primary"
+                             Size="Size.Large"
+                             Indeterminate="true" />
+    }
+    else
+    {
+        <AuthDetails />
+    }
+</MudContainer>

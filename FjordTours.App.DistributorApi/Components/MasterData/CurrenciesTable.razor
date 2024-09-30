@@ -1,0 +1,34 @@
+﻿@using FjordTours.App.DistributorApi.Infrastructure.State
+
+@if (AppState.Currencies is null)
+{
+    <MudAlert Severity="Severity.Warning">No data to show.</MudAlert>
+}
+else
+{
+    <MudGrid>
+        <MudItem xs="12">
+            <MudTable Items="AppState.Currencies.OrderBy(x => x.Name)"
+                      Hover="true"
+                      Breakpoint="Breakpoint.Sm">
+                <HeaderContent>
+                    <MudTh>Id</MudTh>
+                    <MudTh>Code</MudTh>
+                    <MudTh>Name</MudTh>
+                </HeaderContent>
+                <RowTemplate>
+                    <MudTd DataLabel="Id">@context.Id</MudTd>
+                    <MudTd DataLabel="Code">@context.CurrencyCode</MudTd>
+                    <MudTd DataLabel="Name">@context.Name</MudTd>
+                </RowTemplate>
+            </MudTable>
+        </MudItem>
+    </MudGrid>
+}
+
+@code {
+
+    [Inject]
+    internal AppState AppState { get; set; } = default!;
+
+}

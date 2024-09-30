@@ -1,0 +1,77 @@
+﻿@page "/octo/supplier"
+@using FjordTours.App.DistributorApi.Components
+@using FjordTours.Channel.Distributor2.Client.DistributorApi.Octo.Contracts
+@using FjordTours.Channel.Distributor2.Client.DistributorApi.Proprietary.Contracts
+@using FjordTours.Channel.Distributor2.Common.DistributorApi.Constants
+@using FjordTours.OCTO.Common.Dtos.Supplier
+@inherits AppProtectedPage
+
+<h1>OCTO API - Supplier</h1>
+
+@if (HasAccessToEndpointCategory(EndpointConstants.ProductCatalogActivity))
+{
+    if (_isLoading)
+    {
+        <MudProgressCircular Color="Color.Primary"
+                             Size="Size.Large"
+                             Indeterminate="true" />
+    }
+    else if (_supplier is null)
+    {
+        <MudAlert Severity="Severity.Info">
+            Supplier not found.
+        </MudAlert>
+    }
+    else
+    {
+        <MudGrid>
+            <MudItem xs="12">
+                <MudText>Id</MudText>
+                <MudText Typo="Typo.button">@_supplier.Id</MudText>
+            </MudItem>
+            <MudItem xs="12">
+                <MudText>Name</MudText>
+                <MudText Typo="Typo.button">@_supplier.Name</MudText>
+            </MudItem>
+            <MudItem xs="12">
+                <MudText>Endpoint</MudText>
+                <MudText Typo="Typo.button">@_supplier.Endpoint</MudText>
+            </MudItem>
+            <MudItem xs="12">
+                <MudText>Contact - Address</MudText>
+                <MudText Typo="Typo.button">@_supplier.Contact.Address</MudText>
+
+                <MudText>Contact - Email</MudText>
+                <MudText Typo="Typo.button">@_supplier.Contact.Email</MudText>
+
+                <MudText>Contact - Website</MudText>
+                <MudText Typo="Typo.button">@_supplier.Contact.Website</MudText>
+
+                <MudText>Contact - Phone</MudText>
+                <MudText Typo="Typo.button">@_supplier.Contact.Telephone</MudText>
+            </MudItem>
+        </MudGrid>
+    }
+}
+else
+{
+    <MudAlert Severity="Severity.Warning">Sorry, distributor does not seem to have access to this functionality.</MudAlert>
+}
+
+@code {
+
+    [Inject]
+    IOctoContract OctoClient { get; set; } = default!;
+
+    bool _isLoading = false;
+    SupplierDto? _supplier { get; set; } = null;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        _isLoading = true;
+        var supplierResult = await OctoClient.GetSupplierAsync();
+        _supplier = supplierResult;
+        _isLoading = false;
+    }
+
+}

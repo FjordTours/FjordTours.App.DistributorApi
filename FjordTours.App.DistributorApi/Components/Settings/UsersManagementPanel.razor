@@ -1,0 +1,53 @@
+﻿@using FjordTours.App.DistributorApi.Infrastructure.State
+@using FjordTours.Channel.Distributor2.Client.DistributorApi.Proprietary.Contracts
+@using FjordTours.Channel.Distributor2.Common.DistributorApi.Dtos.DistributorApi.Management.Users
+
+@if (_isLoading)
+{
+    <MudProgressCircular Color="Color.Primary"
+                         Size="Size.Large"
+                         Indeterminate="true" />
+}
+else if (_users is null ||
+         !_users.Any())
+{
+    <MudAlert Severity="Severity.Warning">No data to show.</MudAlert>
+}
+else
+{
+    <MudGrid>
+        <MudItem xs="12">
+            <MudTable Items="_users.OrderBy(x => x.UserName)"
+                      Hover="true"
+                      Breakpoint="Breakpoint.Sm">
+                <HeaderContent>
+                    <MudTh>User Name</MudTh>
+                </HeaderContent>
+                <RowTemplate>
+                    <MudTd DataLabel="User Name">@context.UserName</MudTd>
+                </RowTemplate>
+            </MudTable>
+        </MudItem>
+    </MudGrid>
+}
+
+@code {
+
+    bool _isLoading = false;
+    IEnumerable<DistributorApiUserDto>? _users { get; set; } = null;
+
+    [Inject]
+    internal IApiContract ApiClient { get; set; } = default!;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (_users is null)
+        {
+            _isLoading = true;
+            var usersResult = await ApiClient.GetDistributorApiUsersAsync();
+            _users = usersResult?.Value;
+            _isLoading = false;
+        }
+    }
+
+}

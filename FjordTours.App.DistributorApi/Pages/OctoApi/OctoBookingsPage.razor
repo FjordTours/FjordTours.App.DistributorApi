@@ -1,0 +1,83 @@
+﻿@page "/octo/bookings"
+@using FjordTours.App.DistributorApi.Components
+@using FjordTours.App.DistributorApi.Infrastructure.Extensions
+@using FjordTours.Channel.Distributor2.Client.DistributorApi.Octo.Contracts
+@using FjordTours.Channel.Distributor2.Common.DistributorApi.Constants
+@using FjordTours.OCTO.Common.Dtos.Booking
+@using Humanizer
+@inherits AppProtectedPage
+
+<h1>Octo Api - Bookings</h1>
+
+@if (HasAccessToEndpointCategory(EndpointConstants.BookingFlow))
+{
+    <MudAlert Severity="Severity.Info">
+        This shows the latest 100 bookings from the last @DAYS_INTO_PAST days.
+    </MudAlert>
+    if (_isLoading)
+    {
+        <MudProgressCircular Color="Color.Primary"
+                             Size="Size.Large"
+                             Indeterminate="true" />
+    }
+    else if (_bookings is null)
+    {
+        <MudAlert Severity="Severity.Info">
+            No current bookings.
+        </MudAlert>
+    }
+    else
+    {
+        <MudGrid>
+            <MudItem xs="12">
+                <MudTable Items="_bookings"
+                          Hover="true"
+                          Breakpoint="Breakpoint.Sm">
+                    <HeaderContent>
+                        <MudTh>Id</MudTh>
+                        <MudTh>Reseller Reference</MudTh>
+                        <MudTh>Supplier Reference</MudTh>
+                        <MudTh>Probable State</MudTh>
+                        <MudTh>More</MudTh>
+                    </HeaderContent>
+                    <RowTemplate>
+                        <MudTd DataLabel="Id">@context.Id</MudTd>
+                        <MudTd DataLabel="Reseller Reference">@context.ResellerReference.ToHyphenIfNullOrEmpty()</MudTd>
+                        <MudTd DataLabel="Supplier Reference">@context.SupplierReference.ToHyphenIfNullOrEmpty()</MudTd>
+                        <MudTd DataLabel="Probable State"><MudChip>@context.Status</MudChip> </MudTd>
+                        <MudTd DataLabel="Details"><MudLink Href="@($"/octo/booking/{context.Id}")">Details</MudLink></MudTd>
+                    </RowTemplate>
+                </MudTable>
+            </MudItem>
+        </MudGrid>
+    }
+}
+else
+{
+    <MudAlert Severity="Severity.Warning">Sorry, distributor does not seem to have access to this functionality.</MudAlert>
+}
+
+@code {
+
+    private const int TAKE_ORDERS = 20;
+    private const int DAYS_INTO_PAST = 7;
+
+    [Inject]
+    IOctoContract OctoClient { get; set; } = default!;
+
+    bool _isLoading = false;
+    IEnumerable<BookingDto>? _bookings { get; set; } = null;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _isLoading = true;
+        var bookingsResult = await OctoClient.GetBookingsAsync(
+            DateTimeOffset.Now.AddDays(-DAYS_INTO_PAST),
+            DateTimeOffset.Now,
+            null,
+            null);
+        _bookings = bookingsResult;
+        _isLoading = false;
+    }
+
+}

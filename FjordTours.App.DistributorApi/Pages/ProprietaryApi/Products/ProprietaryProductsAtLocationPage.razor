@@ -1,0 +1,104 @@
+﻿@page "/proprietary/products/at-location"
+@using FjordTours.App.DistributorApi.Components
+@using FjordTours.App.DistributorApi.Infrastructure.Constants
+@using FjordTours.App.DistributorApi.Infrastructure.Extensions
+@using FjordTours.App.DistributorApi.Infrastructure.State
+@using FjordTours.Channel.Distributor2.Client.DistributorApi.Proprietary.Contracts
+@using FjordTours.Channel.Distributor2.Common.DistributorApi.Constants
+@using FjordTours.Channel.Distributor2.Common.DistributorApi.Dtos.DistributorApi.Complaints
+@using FjordTours.Channel.Distributor2.Common.DistributorApi.Dtos.DistributorApi.MasterData
+@using FjordTours.Channel.Distributor2.Common.DistributorApi.Dtos.DistributorApi.Transaction.ActivityAvailabilityCalendar
+@using FjordTours.Channel.Distributor2.Common.DistributorApi.Dtos.DistributorApi.Transaction.AvailableProductsAtLocation
+@inherits AppProtectedPage
+
+<h1>Proprietary Api - Products - At Location</h1>
+
+@if (HasAccessToEndpointCategory(EndpointConstants.AvailabilityActivity))
+{
+    <MudAlert Severity="Severity.Info">Gets available products for tomorrow at location Bergen.</MudAlert>
+    if (_isLoading)
+    {
+        <MudProgressCircular Color="Color.Primary"
+                             Size="Size.Large"
+                             Indeterminate="true" />
+    }
+    else if (_availProducts is null)
+    {
+        <MudAlert Severity="Severity.Info">
+            No available products to show.
+        </MudAlert>
+    }
+    else
+    {
+        <MudTable Items="_availProducts.OrderBy(d => d.DepartureDate)"
+                  Hover="true"
+                  Breakpoint="Breakpoint.Sm">
+            <HeaderContent>
+                <MudTh>Time</MudTh>
+                <MudTh>Product</MudTh>
+                <MudTh>Availability</MudTh>
+                <MudTh>More</MudTh>
+            </HeaderContent>
+            <RowTemplate>
+                <MudTd DataLabel="Time"><MudText Typo="Typo.button">@context.DepartureTime.ToTimeString()</MudText></MudTd>
+                <MudTd DataLabel="Product">@context.ProductName - @context.ProductVariationName</MudTd>
+                <MudTd DataLabel="Available">
+                    <MudChip Color="@(context.IsAvailable ? Color.Success : Color.Error)">
+                        @context.MaxQuantityAvailable.ToString()
+                    </MudChip>
+                </MudTd>
+                <MudTd DataLabel="More">
+                    @if (context.ProductType is Channel.Distributor2.Common.DistributorApi.Enums.ProductType.Activity)
+                    {
+                        <MudLink Href="@($"/proprietary/activity/offers/{context.ProductId}/{context.DepartureDate.ToUrlDateString()}")">Get Offers</MudLink>
+                    }
+                    else if (context.ProductType is Channel.Distributor2.Common.DistributorApi.Enums.ProductType.Composite)
+                    {
+                        <MudLink Href="@($"/proprietary/bundle/offers/{context.ProductId}/{context.DepartureDate.ToUrlDateString()}")">Get Offers</MudLink>
+                    }
+                    else
+                    {
+                        <span>N/A</span>
+                    }
+                </MudTd>
+            </RowTemplate>
+        </MudTable>
+    }
+}
+else
+{
+    <MudAlert Severity="Severity.Warning"> Sorry, distributor does not seem to have access to this functionality.</MudAlert>
+}
+
+@code {
+
+    [Inject]
+    AppState AppSate { get; set; } = default!;
+
+    [Inject]
+    IApiContract ApiClient { get; set; } = default!;
+
+    bool _isLoading = false;
+    SegmentDto? _selectedSegment = null;
+    IEnumerable<ProductAvailabilityResultDto>? _availProducts { get; set; } = null;
+    DateTimeOffset? _selectedDate = null;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _isLoading = true;
+        var _selectedSegment = AppState.Segments?.OrderBy(s => s.Name).FirstOrDefault();
+        if (_selectedSegment is not null)
+        {
+            var availResult = await ApiClient.GetAvailableProductsAtLocationAsync(
+                new AvailableProductsAtLocationRequest() {
+                    SegmentId = _selectedSegment.Id,
+                    DepartureDate = DateTime.Now.AddDays(1),
+                    LocationId = AppConstants.BergenLocationId
+                });
+            _availProducts = availResult?.Value;
+        }
+        _isLoading = false;
+        StateHasChanged();
+    }
+
+}

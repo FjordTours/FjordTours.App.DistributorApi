@@ -1,0 +1,68 @@
+﻿@page "/osdm/places"
+@using FjordTours.App.DistributorApi.Components
+@using FjordTours.App.DistributorApi.Infrastructure.Extensions
+@using FjordTours.Channel.Distributor2.Client.DistributorApi.Octo.Contracts
+@using FjordTours.Channel.Distributor2.Client.DistributorApi.Osdm.Contracts
+@using FjordTours.Channel.Distributor2.Common.DistributorApi.Constants
+@using FjordTours.OSDM.Common.Models.MasterData
+@using Humanizer
+@inherits AppProtectedPage
+
+<h1>Octo Api - Bookings</h1>
+
+@if (HasAccessToEndpointCategory(EndpointConstants.Masterdata))
+{
+    if (_isLoading)
+    {
+        <MudProgressCircular Color="Color.Primary"
+                             Size="Size.Large"
+                             Indeterminate="true" />
+    }
+    else if (_places is null)
+    {
+        <MudAlert Severity="Severity.Info">
+            No current bookings.
+        </MudAlert>
+    }
+    else
+    {
+        <MudGrid>
+            <MudItem xs="12">
+                <MudTable Items="_places"
+                          Hover="true"
+                          Breakpoint="Breakpoint.Sm">
+                    <HeaderContent>
+                        <MudTh>Id</MudTh>
+                        <MudTh>Name</MudTh>
+                    </HeaderContent>
+                    <RowTemplate>
+                        <MudTd DataLabel="Id">@context.Id</MudTd>
+                        <MudTd DataLabel="Name">@context.Name.ToHyphenIfNullOrEmpty()</MudTd>
+                    </RowTemplate>
+                </MudTable>
+            </MudItem>
+        </MudGrid>
+    }
+}
+else
+{
+    <MudAlert Severity="Severity.Warning">Sorry, distributor does not seem to have access to this functionality.</MudAlert>
+}
+
+@code {
+
+    [Inject]
+    IOsdmContract OsdmClient { get; set; } = default!;
+
+    bool _isLoading = false;
+    IEnumerable<PlaceModel>? _places { get; set; } = null;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _isLoading = true;
+        var placesResult = await OsdmClient.GetPlacesAsync();
+        _places = placesResult.Places;
+        _isLoading = false;
+    }
+
+}

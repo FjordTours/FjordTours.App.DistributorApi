@@ -1,0 +1,144 @@
+﻿@page "/proprietary/products"
+@using FjordTours.App.DistributorApi.Components
+@using FjordTours.App.DistributorApi.Infrastructure.Extensions
+@using FjordTours.App.DistributorApi.Infrastructure.State
+@using FjordTours.Channel.Distributor2.Common.DistributorApi.Constants
+@using FjordTours.Channel.Distributor2.Common.DistributorApi.Dtos.DistributorApi.Product
+@using FjordTours.Channel.Distributor2.Common.DistributorApi.Enums
+@inherits AppProtectedPage
+
+<h1>Proprietary Api - Products</h1>
+
+@if (HasAccessToEndpointCategory(EndpointConstants.ProductCatalogAccommodation) ||
+     HasAccessToEndpointCategory(EndpointConstants.ProductCatalogActivity) ||
+     HasAccessToEndpointCategory(EndpointConstants.ProductCatalogBundle) ||
+     HasAccessToEndpointCategory(EndpointConstants.ProductCatalogTransport))
+{
+    if (AppState.Products is null ||
+        !AppState.Products.Any())
+    {
+        <MudAlert Severity="Severity.Warning">No data to show.</MudAlert>
+    }
+    else
+    {
+        <MudGrid>
+            @foreach (var product in AppState.Products.OrderBy(x => x.InternalName))
+            {
+                var color = product.ProductType switch {
+                    ProductType.Accommodation => Color.Success,
+                    ProductType.Activity => Color.Primary,
+                    ProductType.Composite => Color.Info,
+                    ProductType.Transport => Color.Warning,
+                    _ => Color.Secondary
+                };
+                var abbr = product.ProductType switch {
+                    ProductType.Accommodation => "P",
+                    ProductType.Activity => "A",
+                    ProductType.Composite => "B",
+                    ProductType.Transport => "T",
+                    _ => "?"
+                };
+                var proceedLink = product.ProductType switch {
+                    ProductType.Accommodation => $"#",
+                    ProductType.Activity => $"/proprietary/activity/calendar/{product.Id}",
+                    ProductType.Composite => $"/proprietary/bundle/calendar/{product.Id}",
+                    ProductType.Transport => $"/proprietary/transport/options/{product.Id}",
+                    _ => "#"
+                };
+                var linkName = product.ProductType switch {
+                    ProductType.Accommodation => "N/A",
+                    ProductType.Activity => "Availability Calendar",
+                    ProductType.Composite => "Bundle Calendar",
+                    ProductType.Transport => "Transport Options",
+                    _ => "N/A"
+                };
+                <MudItem xs="3">
+                    <MudCard style="min-height: 100px;">
+                        <MudCardHeader>
+                            <CardHeaderAvatar>
+                                <MudAvatar Color="color">@abbr</MudAvatar>
+                            </CardHeaderAvatar>
+                            <CardHeaderContent>
+                                <MudText Typo="Typo.h6">@product.InternalName</MudText>
+                                <MudText Typo="Typo.button">@product.ProductType.ToString()</MudText>
+                            </CardHeaderContent>
+                        </MudCardHeader>
+                        <MudCardContent>
+                            <MudText>Is Currently Bookable</MudText>
+                            <MudText Typo="Typo.button">@product.IsCurrentlyBookable.ToString()</MudText>
+
+                            <MudText>Cutoff in Minutes</MudText>
+                            <MudText Typo="Typo.button">@product.CutoffTimeInMinutes.ToString()</MudText>
+
+                            <MudText>Min / Max Pax</MudText>
+                            <MudText Typo="Typo.button">@product.MinimumPax.ToString() / @product.MaximumPax.ToString()</MudText>
+
+                            <MudText>Product Id</MudText>
+                            <MudText Typo="Typo.button">@product.Id.ToString()</MudText>
+
+                            @if (product is BundleProductDto)
+                            {
+                                var bundleProduct = (BundleProductDto)product;
+                                <MudExpansionPanels>
+                                    @foreach (var variation in bundleProduct.Variations)
+                                    {
+                                        <MudExpansionPanel>
+                                            <TitleContent>
+                                                <MudText Typo="Typo.button">@variation.Name.ToHyphenIfNullOrEmpty()</MudText>
+                                                <br />
+                                                <MudLink Href="@($"/proprietary/bundle/calendar/{product.Id}/{variation.Id}")">Bundle Calendar</MudLink>
+                                            </TitleContent>
+                                            <ChildContent>
+                                                <MudText>Id</MudText>
+                                                <MudText Typo="Typo.button">@variation.Id.ToString()</MudText>
+
+                                                <MudText>Name</MudText>
+                                                <MudText Typo="Typo.button">@variation.Name.ToHyphenIfNullOrEmpty()</MudText>
+
+                                                <MudText>Fitness Level</MudText>
+                                                <MudText Typo="Typo.button">@variation.FitnessLevel.ToHyphenIfNullOrEmpty()</MudText>
+
+                                                <MudText>Valid For</MudText>
+                                                <MudText Typo="Typo.button">@variation.ValidFor.ToHyphenIfNullOrEmpty()</MudText>
+
+                                                <MudText>Ticket Types</MudText>
+                                                <MudText Typo="Typo.button">@string.Join("; ", variation.TicketTypes.OrderBy(tt => tt.Sequence).Select(tt => tt.Name))</MudText>
+                                            </ChildContent>
+                                        </MudExpansionPanel>
+                                    }
+                                </MudExpansionPanels>
+                            }
+                        </MudCardContent>
+                        <MudCardActions>
+                            @if (proceedLink != "#" && 
+                                 product.ProductType is not ProductType.Composite)
+                            {
+                                <MudLink Href="@proceedLink">@linkName</MudLink>
+                            }
+                            else if (!product.IsCurrentlyBookable)
+                            {
+                                <span>Currently not bookable</span>
+                            }
+                            else
+                            {
+                                <span>N/A</span>
+                            }
+                            
+                        </MudCardActions>
+                    </MudCard>
+                </MudItem>
+            }
+        </MudGrid>
+    }
+}
+else
+{
+    <MudAlert Severity="Severity.Warning">Sorry, distributor does not seem to have access to this functionality.</MudAlert>
+}
+
+@code {
+
+    [Inject]
+    internal AppState AppState { get; set; } = default!;
+
+}

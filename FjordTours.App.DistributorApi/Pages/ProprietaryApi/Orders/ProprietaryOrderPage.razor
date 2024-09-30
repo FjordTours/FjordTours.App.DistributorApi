@@ -1,0 +1,455 @@
+﻿@page "/proprietary/order/{OrderId:guid}"
+@using FjordTours.App.DistributorApi.Components
+@using FjordTours.App.DistributorApi.Infrastructure.Extensions
+@using FjordTours.App.DistributorApi.Infrastructure.State
+@using FjordTours.Channel.Distributor2.Client.DistributorApi.Proprietary.Contracts
+@using FjordTours.Channel.Distributor2.Common.DistributorApi.Constants
+@using FjordTours.Channel.Distributor2.Common.DistributorApi.Dtos.DistributorApi.Transaction.Order
+@using System.Timers
+@using FjordTours.Channel.Distributor2.Common.DistributorApi.Enums
+@using Humanizer
+@inherits AppProtectedPage
+@implements IDisposable
+
+<h1>Proprietary Api - Order</h1>
+
+@if (HasAccessToEndpointCategory(EndpointConstants.BookingFlow))
+{
+    if (_timerEnabled)
+    {
+        <MudAlert Severity="Severity.Info">
+            Order will refresh every @REFRESH_EVERY_SECONDS seconds, up to @MAX_REFRESHES times (refreshes so far: @_refreshesCount).
+        </MudAlert>
+    }
+    else
+    {
+        <MudAlert Severity="Severity.Warning">
+            Order auto-refresh is not active.
+        </MudAlert>
+    }
+    
+    if (_isLoading)
+    {
+        <MudProgressCircular Color="Color.Primary"
+                             Size="Size.Large"
+        Indeterminate="true" />
+    }
+    else if (_orderNotOwnedByDistributor)
+    {
+        <MudAlert Severity="Severity.Error">
+            Order not found or not owned by the current distributor.
+        </MudAlert>
+    }
+    else if (_order is null)
+    {
+        <MudAlert Severity="Severity.Warning">
+            Order data is not (yet) available.
+        </MudAlert>
+    }
+    else
+    {
+        var adminContact = _order.Contacts.FirstOrDefault(c => c.ContactType == "Administrative");
+
+        <MudGrid>
+            <MudItem xs="12">
+                @if (_order.IsSendDocumentsInhibited)
+                {
+                    <MudAlert Severity="Severity.Warning">
+                        Sending documents is currently inhibited.
+                    </MudAlert>
+                }
+            </MudItem>
+            <MudItem xs="8">
+            </MudItem>
+            <MudItem xs="4">
+                <MudText Typo="Typo.h6">Order @_order.Reference</MudText>
+                <MudText Typo="Typo.body1"><MudChip>@_order.OrderState</MudChip> / <MudChip>@_order.PaymentState</MudChip></MudText>
+                <MudText Typo="Typo.body1">Balance: @_order.SettlementBalance?.ToMoneyString().ToHyphenIfNullOrEmpty()</MudText>
+                <MudText Typo="Typo.body1">
+                    Created: @_order.CreatedTimestamp.ToDateTimeString() <br />
+                    <MudAlert Severity="Severity.Info">@_order.CreatedTimestamp.Humanize()</MudAlert>
+                </MudText>
+                <MudText Typo="Typo.body1"><MudChip>@_order.PointOfSales?.ToHyphenIfNullOrEmpty().ToUpper() </MudChip> / <MudChip> @_order.Segment?.Name.ToHyphenIfNullOrEmpty().ToUpper()</MudChip></MudText>
+            </MudItem>
+
+            <MudItem xs="12"></MudItem>
+            <MudItem xs="12"><MudDivider /></MudItem>
+            <MudItem xs="12"></MudItem>
+
+            <MudItem xs="4">
+                <MudText Typo="Typo.h6">Order @_order.Distributor?.Name.ToHyphenIfNullOrEmpty()</MudText>
+                <MudText Typo="Typo.body1">Order Name: @(_order.OrderName.ToHyphenIfNullOrEmpty())</MudText>
+                <MudText Typo="Typo.body1">Booking Reference: @(_order.DistributorBookingReference.ToHyphenIfNullOrEmpty())</MudText>
+            </MudItem>
+            <MudItem xs="4">
+                @if (adminContact is not null)
+                {
+                    <MudText Typo="Typo.h6">@adminContact.FirstName @adminContact.LastName</MudText>
+                    <MudText Typo="Typo.body1">@adminContact.Email</MudText>
+                    <MudText Typo="Typo.body1">@adminContact.MobilePhone</MudText>
+                }
+            </MudItem>
+            <MudItem xs="4">
+                @foreach (var item in _order.PropertyBag)
+                {
+                    <MudText Typo="Typo.body1"><MudChip>@item.Key => @item.Value</MudChip></MudText>
+                }
+            </MudItem>
+
+            <MudItem xs="12"></MudItem>
+            <MudItem xs="12"><MudDivider /></MudItem>
+            <MudItem xs="12"></MudItem>
+
+            <MudItem xs="12">
+                <h3>Order Lines</h3>
+                @if (_order.OrderItems.Any())
+                {
+                    <MudTimeline TimelineOrientation="TimelineOrientation.Vertical"
+                                 TimelinePosition="TimelinePosition.Start"
+                                 DisableModifiers="false">
+                        @foreach (var orderItem in _order.OrderItems)
+                        {
+                            var color = orderItem.ProductType switch
+                            {
+                                nameof(ProductType.Accommodation) => Color.Success,
+                                nameof(ProductType.Activity) => Color.Primary,
+                                nameof(ProductType.Composite) => Color.Info,
+                                nameof(ProductType.Transport) => Color.Warning,
+                                _ => Color.Secondary
+                            };
+                            <MudTimelineItem Color="color"
+                                             Variant="Variant.Filled"
+                                             Elevation="0">
+                                <ItemContent>
+                                    <MudText Typo="Typo.button">@orderItem.ProductName - </MudText>
+                                    <MudText Typo="Typo.button">@orderItem.ProductVariationName</MudText>
+                                    @if (orderItem.IsFailed)
+                                    {
+                                        <MudText Typo="Typo.button" Color="Color.Error"><MudChip>Failed</MudChip></MudText>
+                                    }
+                                    @if (orderItem.IsDelayed)
+                                    {
+                                        <MudText Typo="Typo.button" Color="Color.Warning"><MudChip>Delayed</MudChip></MudText>
+                                    }
+                                    <br />
+                                    <MudText Typo="Typo.button"><MudChip>@orderItem.SalesFareName (v: @orderItem.SalesFareVersion)</MudChip></MudText>
+                                    <MudText Typo="Typo.button"><MudChip>@orderItem.State</MudChip></MudText>
+                                    <br />
+                                    @if (!string.IsNullOrEmpty(orderItem.BundleProductName))
+                                    {
+                                        <MudText Typo="Typo.body1">@orderItem.BundleProductName - </MudText>
+                                        <MudText Typo="Typo.body1">@orderItem.BundleProductVariationName</MudText>
+                                        <br />
+                                    }
+                                    <MudText Typo="Typo.button"><MudChip>Retail Price: @orderItem.RetailPrice?.ToMoneyString().ToHyphenIfNullOrEmpty()</MudChip></MudText>
+                                    <MudText Typo="Typo.button"><MudChip>Commission: @orderItem.DistributorCommission?.ToMoneyString().ToHyphenIfNullOrEmpty()</MudChip></MudText>
+
+                                    <h4>Traveler Groups</h4>
+                                    @if (orderItem.TravelerGroups.Any())
+                                    {
+                                        @foreach (var tg in orderItem.TravelerGroups)
+                                        {
+                                            <MudText Typo="Typo.body1">Group @tg.GroupNumber</MudText>
+                                            @if (tg.UnitType is not null)
+                                            {
+                                                <MudText Typo="Typo.body1">Group @tg.UnitType.UnitTypeName</MudText>
+                                                <MudText Typo="Typo.button"><MudChip>@tg.UnitType.Status</MudChip></MudText>
+                                                <MudText Typo="Typo.button"><MudChip>@tg.UnitType.SalesPrice?.ToMoneyString().ToHyphenIfNullOrEmpty()</MudChip></MudText>
+                                            }
+                                            @if (tg.Travelers.Any())
+                                            {
+                                                @foreach (var t in tg.Travelers)
+                                                {
+                                                    <MudText Typo="Typo.body1">PaxRPH: @t.PaxRPH <MudChip>@t.Status</MudChip></MudText>
+                                                    <MudText Typo="Typo.body1">Ticket Type: @t.TicketTypeName <MudChip>@t.SalesPrice?.ToMoneyString().ToHyphenIfNullOrEmpty()</MudChip></MudText>
+                                                }
+                                            }
+                                            else
+                                            {
+                                                <MudAlert Severity="Severity.Info">No travelers.</MudAlert>
+                                            }
+                                        }
+                                    }
+                                    else
+                                    {
+                                        <MudAlert Severity="Severity.Info">No traveler groups.</MudAlert>
+                                    }
+
+                                    <h4>Allocations</h4>
+                                    @if (orderItem.Allocations.Any())
+                                    {
+                                        @foreach (var alloc in orderItem.Allocations)
+                                        {
+                                            <MudText Typo="Typo.body1">Pax: @alloc.PaxRPH / <MudChip>@alloc.Status</MudChip> / Pile: @alloc.Pile.ToHyphenIfNullOrEmpty() / Unit: @alloc.Unit.ToHyphenIfNullOrEmpty() / Section: @alloc.Section.ToHyphenIfNullOrEmpty() / Spot: @alloc.Spot.ToHyphenIfNullOrEmpty()</MudText>
+                                        }
+                                    }
+                                    else
+                                    {
+                                        <MudAlert Severity="Severity.Info">No allocations.</MudAlert>
+                                    }
+
+                                    <h4>Custom Fields</h4>
+                                    @if (orderItem.CustomFields.Any())
+                                    {
+                                        @foreach (var cf in orderItem.CustomFields)
+                                        {
+                                            <MudText Typo="Typo.body1"><MudChip>@cf.Key => @cf.Value</MudChip></MudText>
+                                        }
+                                    }
+                                    else
+                                    {
+                                        <MudAlert Severity="Severity.Info">No custom fields.</MudAlert>
+                                    }
+
+                                    <h4>Attributes</h4>
+                                    @if (orderItem.Attributes.Any())
+                                    {
+                                        @foreach (var attr in orderItem.Attributes)
+                                        {
+                                            <MudText Typo="Typo.body1">
+                                                <MudChip>@attr.Key => @attr.Value</MudChip>
+                                                @if (attr.Key == AttributeKey.StartDateTime)
+                                                {
+                                                    <span>Starts in @DateTimeOffset.Parse(attr.Value).Humanize()</span>
+                                                }
+                                                @if (attr.Key == AttributeKey.DepartureDateTime)
+                                                {
+                                                    <span>Departs in @DateTimeOffset.Parse(attr.Value).Humanize()</span>
+                                                }
+                                                @if (attr.Key == AttributeKey.OriginLocationId)
+                                                {
+                                                    <span>Origin is @GetLocationName(Guid.Parse(attr.Value))</span>
+                                                }
+                                                @if (attr.Key == AttributeKey.ArrivalDateTime)
+                                                {
+                                                    <span>Arrives in @DateTimeOffset.Parse(attr.Value).Humanize()</span>
+                                                }
+                                                @if (attr.Key == AttributeKey.DestinationLocationId)
+                                                {
+                                                    <span>Destination is @GetLocationName(Guid.Parse(attr.Value))</span>
+                                                }
+                                                @if (attr.Key == AttributeKey.TravelClassId)
+                                                {
+                                                    <span>Travellig in @GetTravelClassName(Guid.Parse(attr.Value))</span>
+                                                }
+                                            </MudText>
+                                        }
+                                    }
+                                    else
+                                    {
+                                        <MudAlert Severity="Severity.Info">No attributes.</MudAlert>
+                                    }
+
+                                    <h4>Deviations</h4>
+                                    @if (orderItem.Deviations.Any())
+                                    {
+                                        @foreach (var dev in orderItem.Deviations)
+                                        {
+                                            <MudText Typo="Typo.body1">@dev.Name</MudText>
+                                            <MudText Typo="Typo.button"><MudChip>@dev.State</MudChip></MudText>
+                                            <MudText Typo="Typo.button"><MudChip>@dev.Type</MudChip></MudText>
+                                            <MudText Typo="Typo.button"><MudChip>@dev.PeriodType</MudChip></MudText>
+                                            <MudText Typo="Typo.button">@dev.PeriodFrom.ToDateTimeString() - @dev.PeriodTo.ToDateTimeString()</MudText>
+                                        }
+                                    }
+                                    else
+                                    {
+                                        <MudAlert Severity="Severity.Info">No deviations.</MudAlert>
+                                    }
+                                </ItemContent>
+                            </MudTimelineItem>
+                        }
+                    </MudTimeline>
+                }
+                else
+                {
+                    <MudAlert Severity="Severity.Info">
+                        No order items to show.
+                    </MudAlert>
+                }
+            </MudItem>
+
+            <MudItem xs="12"></MudItem>
+            <MudItem xs="12"><MudDivider /></MudItem>
+            <MudItem xs="12"></MudItem>
+
+            <MudItem xs="12">
+                <h3>Financial Transactions</h3>
+                @if (_order.FinancialTransactions.Any())
+                {
+                    <MudTable Items="_order.FinancialTransactions"
+                              Hover="true"
+                              Breakpoint="Breakpoint.Sm">
+                        <HeaderContent>
+                            <MudTh>Type</MudTh>
+                            <MudTh>Receipt Text</MudTh>
+                            <MudTh>State</MudTh>
+                            <MudTh>Amount</MudTh>
+                            <MudTh>Payment</MudTh>
+                        </HeaderContent>
+                        <RowTemplate>
+                            <MudTd DataLabel="Type">@context.Type</MudTd>
+                            <MudTd DataLabel="Receipt Text">@context.ReceiptText.ToHyphenIfNullOrEmpty()</MudTd>
+                            <MudTd DataLabel="State"><MudChip>@context.State</MudChip> </MudTd>
+                            <MudTd DataLabel="Amount"><MudChip>@context.Amount?.ToMoneyString().ToHyphenIfNullOrEmpty()</MudChip></MudTd>
+                            <MudTd DataLabel="Payment">
+                                @if (context.Payment is null)
+                                {
+                                    <span>N/A</span>
+                                }
+                                else
+                                {
+                                    <MudTd DataLabel="State"><MudChip>@context.Payment.State</MudChip> </MudTd>
+                                }
+                            </MudTd>
+                        </RowTemplate>
+                    </MudTable>
+                }
+                else
+                {
+                    <MudAlert Severity="Severity.Info">
+                        No financial transactions to show.
+                    </MudAlert>
+                }
+            </MudItem>
+
+            <MudItem xs="12"></MudItem>
+            <MudItem xs="12"><MudDivider /></MudItem>
+            <MudItem xs="12"></MudItem>
+
+            <MudItem xs="12">
+                <h3>Notes</h3>
+                @if (_order.Notes.Any())
+                {
+                    <MudTable Items="_order.Notes.OrderByDescending(n => n.CreatedTimestamp)"
+                              Hover="true"
+                              Breakpoint="Breakpoint.Sm">
+                        <HeaderContent>
+                            <MudTh>Created</MudTh>
+                            <MudTh>Text</MudTh>
+                            <MudTh>Is Private</MudTh>
+                        </HeaderContent>
+                        <RowTemplate>
+                            <MudTd DataLabel="Created">@context.CreatedTimestamp.ToDateTimeString()</MudTd>
+                            <MudTd DataLabel="Text">@context.Text.ToHyphenIfNullOrEmpty()</MudTd>
+                            <MudTd DataLabel="Is Private"><MudChip>@context.IsPrivate.ToYesNo()</MudChip> </MudTd>
+                        </RowTemplate>
+                    </MudTable>
+                }
+                else
+                {
+                    <MudAlert Severity="Severity.Info">
+                        No notes to show.
+                    </MudAlert>
+                }
+            </MudItem>
+        </MudGrid>        
+    }
+}
+else
+{
+    <MudAlert Severity="Severity.Warning"> Sorry, distributor does not seem to have access to this functionality.</MudAlert>
+}
+
+@code {
+
+    private const int REFRESH_EVERY_SECONDS = 5;
+    private const int MAX_REFRESHES = 12;
+
+    [Inject]
+    AppState AppSate { get; set; } = default!;
+
+    [Inject]
+    IApiContract ApiClient { get; set; } = default!;
+
+    [Parameter]
+    public Guid OrderId { get; set; }
+
+    bool _isLoading = false;
+    bool _timerEnabled = true;
+    Timer _timer = new Timer(1000);
+    int _nextRefreshInSeconds = REFRESH_EVERY_SECONDS;
+    int _refreshesCount = 0;
+    bool _orderNotOwnedByDistributor = false;
+    OrderDto? _order = null;
+
+    protected override void OnInitialized()
+    {
+        _timer.Elapsed += OnTimer;
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        await LoadOrderAsync();
+        _timer.Enabled = true;
+        _timerEnabled = true;
+    }
+
+    async Task LoadOrderAsync(bool silently = false)
+    {
+        if (!silently)
+        {
+            _isLoading = true;
+            StateHasChanged();
+        }
+
+        try
+        {
+            var orderResult = await ApiClient.GetOrderByIdAsync(
+                OrderId, true);
+            if (orderResult.Messages.Any(m => m.Code == "DIST_CHAN-3036"))
+            {
+                _orderNotOwnedByDistributor = true;
+                if (_timerEnabled)
+                    StopTimer();
+            }
+            _order = orderResult?.Value;
+        }
+        catch (Exception ex)
+        {
+            _order = null;
+        }
+
+        if (!silently)
+        {
+            _isLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    string? GetLocationName(Guid locationId)
+        => AppState.Locations!.FirstOrDefault(l => l.Id == locationId)?.Name;
+
+    string? GetTravelClassName(Guid travelClassId)
+        => AppState.TravelClasses!.FirstOrDefault(l => l.Id == travelClassId)?.Name;
+
+    async void OnTimer(Object? source, ElapsedEventArgs e)
+    {
+        _nextRefreshInSeconds--;
+        if (_nextRefreshInSeconds == 0)
+        {
+            await LoadOrderAsync(true);
+            _nextRefreshInSeconds = REFRESH_EVERY_SECONDS;
+            _refreshesCount++;
+            InvokeAsync(StateHasChanged);
+        }
+        if (_refreshesCount > MAX_REFRESHES)
+        {
+            StopTimer();
+        }
+    }
+
+    void IDisposable.Dispose()
+    {
+        StopTimer();
+    }
+
+    void StopTimer() 
+    {
+        _timer.Enabled = false;
+        _timer.Elapsed -= OnTimer;
+        _timerEnabled = false;
+        StateHasChanged();
+    }
+
+}

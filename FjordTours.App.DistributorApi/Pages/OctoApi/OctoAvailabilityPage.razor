@@ -1,0 +1,226 @@
+﻿@page "/octo/activity/offers/{ProductId}/{OptionId}/{TravelDate:datetime}"
+@using FjordTours.App.DistributorApi.Components
+@using FjordTours.App.DistributorApi.Infrastructure.Constants
+@using FjordTours.App.DistributorApi.Infrastructure.Extensions
+@using FjordTours.App.DistributorApi.Infrastructure.State
+@using FjordTours.Channel.Distributor2.Client.DistributorApi.Octo.Contracts
+@using FjordTours.Channel.Distributor2.Common.DistributorApi.Constants
+@using FjordTours.Channel.Distributor2.Common.DistributorApi.Enums
+@using FjordTours.OCTO.Common.Dtos.Availability
+@using FjordTours.OCTO.Common.Enums
+@inherits AppProtectedPage
+
+<h1>Octo Api - Availabilities (Offers)</h1>
+
+@if (HasAccessToEndpointCategory(EndpointConstants.BookingFlow))
+{
+    if (_isLoading)
+    {
+        <MudProgressCircular Color="Color.Primary"
+                             Size="Size.Large"
+                             Indeterminate="true" />
+    }
+    else if (_availabilities is null)
+    {
+        <MudAlert Severity="Severity.Info">
+            No activity availability/offer to show.
+        </MudAlert>
+    }
+    else
+    {
+        <MudGrid>
+            <MudItem xs="12">
+                <h2>Metadata</h2>
+                <MudAlert Severity="Severity.Info">
+                    Availabilities/Offers are searched for one adult.
+                </MudAlert>
+            </MudItem>
+            <MudItem xs="12">
+                <h2>Order Data</h2>
+                <MudAlert Severity="Severity.Warning">
+                    Accepting one of the availabilities below will execute both ReserveBooking as well as ConfirmBooking.
+                </MudAlert>
+
+                <MudAlert Severity="Severity.Info">
+                    Accepting one of the availabilities below will submit the following data:
+                </MudAlert>
+
+                <MudText Typo="Typo.h6">Correlation Id</MudText>
+                <MudText Typo="Typo.button">@_correlationId</MudText>
+
+                <MudText Typo="Typo.h6">Order Name</MudText>
+                <MudText Typo="Typo.button">@_orderName</MudText>
+
+                <MudText Typo="Typo.h6">Distributor Booking Reference</MudText>
+                <MudText Typo="Typo.button">@_distributorBookingReference</MudText>
+
+                <MudText Typo="Typo.h6">Name</MudText>
+                <MudText Typo="Typo.button">@_firstName @_lastName</MudText>
+
+                <MudText Typo="Typo.h6">Email</MudText>
+                <MudText Typo="Typo.button">@_email</MudText>
+
+                <MudText Typo="Typo.h6">Phone</MudText>
+                <MudText Typo="Typo.button">@_phone</MudText>
+            </MudItem>
+            <MudItem xs="12">
+                <h2>Offers</h2>
+                <MudGrid>
+                    @foreach (var avail in _availabilities)
+                    {
+                        var color = ProductId.StartsWith("activity")
+                            ? Color.Primary
+                            : Color.Info;
+                        var abbr = ProductId.StartsWith("activity")
+                            ? "A"
+                            : "B";
+                        <MudItem xs="3">
+                            <MudCard style="min-height: 100px;">
+                                <MudCardHeader>
+                                    <CardHeaderAvatar>
+                                        <MudAvatar Color="color">@abbr</MudAvatar>
+                                    </CardHeaderAvatar>
+                                    <CardHeaderContent>
+                                        <MudText Typo="Typo.h6">@avail.Id</MudText>
+                                        <MudText Typo="Typo.button">@avail.AvailabilityStatus.ToString()</MudText>
+                                    </CardHeaderContent>
+                                </MudCardHeader>
+                                <MudCardContent>
+                                    <MudText>Start - End</MudText>
+                                    <MudText Typo="Typo.button">@avail.LocalDateTimeStart.ToDateTimeString() - @avail.LocalDateTimeEnd.ToDateTimeString()</MudText>
+
+                                    <MudText>Availability</MudText>
+                                    <MudText Typo="Typo.button">
+                                        <MudChip Color="@(avail.UnitsAvailable > 0 ? Color.Success : Color.Error)">
+                                            @avail.UnitsAvailable
+                                        </MudChip>
+                                    </MudText>
+
+                                    <MudText>Cutoff</MudText>
+                                    <MudText Typo="Typo.button">@avail.UtcCutoffAt.ToDateTimeString()</MudText>
+                                </MudCardContent>
+                                <MudCardActions>
+                                    @if (avail.UnitsAvailable > 0)
+                                    {
+                                        <MudButton Variant="Variant.Filled"
+                                                   Color="Color.Primary"
+                                                   Disabled="_isAccepting"
+                                                   OnClick="@(() => Accept(avail))">
+                                            Accept
+                                        </MudButton>
+                                    }
+                                    else
+                                    {
+                                        <span>N/A</span>
+                                    }
+                                </MudCardActions>
+                            </MudCard>
+                        </MudItem>
+                    }
+                </MudGrid>
+            </MudItem>
+        </MudGrid>
+    }
+}
+else
+{
+    <MudAlert Severity="Severity.Warning"> Sorry, distributor does not seem to have access to this functionality.</MudAlert>
+}
+
+@code {
+
+    [Inject]
+    AppState AppSate { get; set; } = default!;
+
+    [Inject]
+    IOctoContract OctoClient { get; set; } = default!;
+
+    [Inject]
+    NavigationManager NavigationManager { get; set; } = default!;
+
+    [Parameter]
+    public string ProductId { get; set; } = default!;
+
+    [Parameter]
+    public string OptionId { get; set; } = default!;
+
+    [Parameter]
+    public DateTime TravelDate { get; set; }
+
+    bool _isLoading = false;
+    bool _isAccepting = false;
+    IEnumerable<AvailabilityResultDto>? _availabilities { get; set; } = null;
+    Guid _correlationId = Guid.NewGuid();
+    string _distributorBookingReference = new string(Faker.Lorem.Letters(8).ToArray());
+    string _orderName = Faker.Lorem.Word();
+    string _firstName = Faker.Name.FirstName();
+    string _lastName = Faker.Name.LastName();
+    string _email = Faker.User.Email();
+    string _phone = $"+47{Faker.Number.RandomNumber(111111111, 999999999)}";
+
+    protected override async Task OnParametersSetAsync()
+    {
+        _isLoading = true;
+        StateHasChanged();
+        if (!string.IsNullOrEmpty(ProductId) &&
+            !string.IsNullOrEmpty(OptionId))
+        {
+            var availabilityResult = await OctoClient.GetAvailabilityAsync(
+                ProductId,
+                OptionId,
+                DateOnly.FromDateTime(TravelDate),
+                new List<AvailabilityUnitRequest>() {
+                    new AvailabilityUnitRequest() {
+                        UnitId = DistributorApiConstants.Adult.AsOctoUnit(),
+                        Quantity = 1
+                    }
+                });
+            _availabilities = availabilityResult;
+        }
+        _isLoading = false;
+        StateHasChanged();
+    }
+
+    async Task Accept(AvailabilityResultDto offer)
+    {
+        if (offer.Id is null)
+            return;
+        var holdResult = await OctoClient.ReserveBookingAsync(
+            offer.Id,
+            ProductId,
+            OptionId);
+        var bookingId = holdResult.Id;
+        Console.WriteLine($"Octo booking id: {bookingId}");
+
+        // Now also confirm the booking. As bundles can take some time to prepare, we loop here
+        // until the booking is ready for the confirm operation.
+        var retryCount = 0;
+        while (holdResult.Status is not OctoBookingStatus.ON_HOLD &&
+               retryCount < 10)
+        {
+            try
+            {
+                holdResult = await OctoClient.GetBookingAsync(bookingId);
+            }
+            catch (Exception)
+            {
+                // Order is probably not yet ready - therefore just try a bit longer.
+                await Task.Delay(500);
+            }
+            retryCount++;
+        }
+
+        _isAccepting = true;
+        StateHasChanged();
+        var confirmResult = await OctoClient.ConfirmBookingAsync(
+            bookingId,
+            _firstName,
+            _lastName,
+            _email,
+            _phone,
+            _distributorBookingReference);
+
+        NavigationManager.NavigateTo($"/octo/booking/{bookingId}");
+    }
+
+}

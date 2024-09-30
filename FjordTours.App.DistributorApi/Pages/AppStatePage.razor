@@ -1,0 +1,50 @@
+﻿@page "/state"
+
+@using FjordTours.App.DistributorApi.Components
+@using FjordTours.App.DistributorApi.Components.MasterData
+
+@inherits AppProtectedPage
+
+<PageTitle>AppState</PageTitle>
+
+<h1>AppState</h1>
+
+<MudPaper Class="pa-16 ma-2"
+          Elevation="3">
+    <MudTabs Elevation="2"
+             Rounded="true"
+             ApplyEffectsToContainer="true"
+             PrevIcon="@Icons.Material.Filled.SkipPrevious" 
+             NextIcon="@Icons.Material.Filled.SkipNext"
+             PanelClass="pa-6">
+
+        <MudTabPanel Text="Countries">
+            <CountriesTable />
+        </MudTabPanel>
+
+        <MudTabPanel Text="Currencies">
+            <CurrenciesTable />
+        </MudTabPanel>
+
+        <MudTabPanel Text="Locations">
+            <LocationsTable />
+        </MudTabPanel>
+
+        <MudTabPanel Text="Segments">
+            <SegmentsTable />
+        </MudTabPanel>
+
+        <MudTabPanel Text="Ticket Types">
+            <TicketTypesTable />
+        </MudTabPanel>
+
+        <MudTabPanel Text="Trsp Unit Types">
+            <TransportUnitTypesTable />
+        </MudTabPanel>
+
+        <MudTabPanel Text="Travel Classes">
+            <TravelClassesTable />
+        </MudTabPanel>
+
+    </MudTabs>
+</MudPaper>

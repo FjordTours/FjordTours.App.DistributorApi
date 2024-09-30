@@ -1,0 +1,118 @@
+﻿@using FjordTours.App.DistributorApi.Components
+@using FjordTours.App.DistributorApi.Infrastructure.Extensions
+@using FjordTours.Channel.Distributor2.Client.DistributorApi.Auth.Config
+
+@inherits AppComponent
+@implements IDisposable
+
+<MudNavMenu>
+
+    @if (HasValidConfig())
+    {
+        <MudNavLink Href="/"
+                    Icon="@Icons.Material.Filled.Dashboard"
+                    Match="NavLinkMatch.All">
+            Dashboard
+        </MudNavLink>
+
+        <MudNavGroup Title="Proprietary"
+                     Icon="@Icons.Material.Filled.ShoppingBasket"
+                     Expanded="true">
+            <MudNavLink Href="/proprietary/products"
+                        Icon="@Icons.Material.Filled.Photo"
+                        Match="NavLinkMatch.All">
+                Products
+            </MudNavLink>
+            <MudNavLink Href="/proprietary/products/at-location"
+                        Icon="@Icons.Material.Filled.EventAvailable"
+                        Match="NavLinkMatch.All">
+                Avail At Location
+            </MudNavLink>
+            <MudNavLink Href="/proprietary/orders"
+                        Icon="@Icons.Material.Filled.ShoppingBag"
+                        Match="NavLinkMatch.All">
+                Orders
+            </MudNavLink>
+            <MudNavLink Href="/proprietary/deviations"
+                        Icon="@Icons.Material.Filled.Warning"
+                        Match="NavLinkMatch.All">
+                Deviations
+            </MudNavLink>
+        </MudNavGroup>
+
+        <MudNavGroup Title="OCTO"
+                     Icon="@Icons.Material.Filled.NordicWalking"
+                     Expanded="true">
+            <MudNavLink Href="/octo/supplier"
+                        Icon="@Icons.Material.Filled.Factory"
+                        Match="NavLinkMatch.All">
+                Supplier
+            </MudNavLink>
+            <MudNavLink Href="/octo/products"
+                        Icon="@Icons.Material.Filled.Photo"
+                        Match="NavLinkMatch.All">
+                Products
+            </MudNavLink>
+            <MudNavLink Href="/octo/bookings"
+                        Icon="@Icons.Material.Filled.ShoppingBag"
+                        Match="NavLinkMatch.All">
+                Bookings
+            </MudNavLink>
+        </MudNavGroup>
+
+        <MudNavGroup Title="OSDM"
+                     Icon="@Icons.Material.Filled.Public"
+                     Expanded="false">
+            <MudNavLink Href="/osdm/places"
+                        Icon="@Icons.Material.Filled.LocationOn"
+                        Match="NavLinkMatch.Prefix">
+                Locations
+            </MudNavLink>
+        </MudNavGroup>
+
+        <MudNavGroup Title="Settings"
+                     Icon="@Icons.Material.Filled.Settings"
+                     Expanded="false">
+            <MudNavLink Href="/settings"
+                        Icon="@Icons.Material.Filled.SettingsSystemDaydream"
+                        Match="NavLinkMatch.Prefix">
+                General Settings
+            </MudNavLink>
+            <MudNavLink Href="/state"
+                        Icon="@Icons.Material.Filled.ChargingStation"
+                        Match="NavLinkMatch.Prefix">
+                App State
+            </MudNavLink>
+        </MudNavGroup>
+
+        <MudNavLink Href="/components"
+                    Icon="@Icons.Material.Filled.DesignServices"
+                    Match="NavLinkMatch.All">
+            Theme
+        </MudNavLink>
+    }
+
+</MudNavMenu>
+
+@code {
+
+    [Inject]
+    NavigationManager NavigationManager { get; set; } = default!;
+
+    protected override Task OnInitializedAsync()
+    {
+        NavigationManager.LocationChanged += OnLocationChanged;
+        return base.OnInitializedAsync();
+    }
+
+    void OnLocationChanged(object? sender, LocationChangedEventArgs e)
+    {
+        StateHasChanged();
+    }
+
+    void IDisposable.Dispose()
+    {
+        NavigationManager.LocationChanged -= OnLocationChanged;
+    }
+
+}

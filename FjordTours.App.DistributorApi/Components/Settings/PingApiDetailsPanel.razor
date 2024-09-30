@@ -1,0 +1,63 @@
+﻿@using FjordTours.App.DistributorApi.Infrastructure.Extensions
+@using FjordTours.App.DistributorApi.Infrastructure.State
+
+@if (AppState.DistributorProfile is null)
+{
+    <MudAlert Severity="Severity.Warning">No data to show.</MudAlert>
+}
+else
+{
+    <MudGrid>
+        <MudItem xs="12">
+            <MudText>Name</MudText>
+            <MudText Typo="Typo.button">@AppState.DistributorProfile.Name.ToHyphenIfNullOrEmpty()</MudText>
+        </MudItem>
+
+        <MudItem xs="12">
+            <MudText>Vat Registration Number</MudText>
+            <MudText Typo="Typo.button">@AppState.DistributorProfile.RegistrationNumber.ToHyphenIfNullOrEmpty()</MudText>
+        </MudItem>
+
+        <MudItem xs="12">
+            <MudText>Active</MudText>
+            <MudText Typo="Typo.button">@AppState.DistributorProfile.IsActive.ToString().ToHyphenIfNullOrEmpty()</MudText>
+        </MudItem>
+
+        <MudItem xs="12">
+            <MudText>Payment Methods</MudText>
+            @if (!AppState.DistributorProfile.PaymentMethods.Any())
+            {
+                <MudAlert Severity="Severity.Warning">Distributor does not have any payment methods.</MudAlert>
+            }
+            else
+            {
+                @foreach (var payMethod in AppState.DistributorProfile.PaymentMethods.Order())
+                {
+                    <MudChip Color="Color.Success">@payMethod</MudChip>
+                }
+            }
+        </MudItem>
+
+        <MudItem xs="12">
+            <MudText>Channels</MudText>
+            @if (!AppState.DistributorProfile.Channels.Any())
+            {
+                <MudAlert Severity="Severity.Warning">Distributor does not have access to any special channels.</MudAlert>
+            }
+            else
+            {
+                @foreach (var channel in AppState.DistributorProfile.Channels.Order())
+                {
+                    <MudChip Color="Color.Success">@channel</MudChip>
+                }
+            }
+        </MudItem>
+    </MudGrid>
+}
+
+@code {
+
+    [Inject]
+    internal AppState AppState { get; set; } = default!;
+
+}
