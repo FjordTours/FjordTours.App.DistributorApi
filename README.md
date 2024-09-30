@@ -44,4 +44,8 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ### Third-Party Licenses
 
-- MudBlazor: we are proud users of [Mudblazor](https://github.com/MudBlazor): Copyright (c) 2021 MudBlazor (MIT License).
+We are proud users of:
+- [Blazored LocalStorage](https://github.com/Blazored/LocalStorage): Copyright (c) 2019 Blazored.
+- [Faker](https://github.com/FermJacob/Faker.Data): Copyright (c) 2016 Jacob Ferm.
+- [Humanizer](https://github.com/Humanizr/Humanizer): Copyright (c) .NET Foundation and Contributors.
+- [Mudblazor](https://github.com/MudBlazor): Copyright (c) 2021 MudBlazor (MIT License).- 
