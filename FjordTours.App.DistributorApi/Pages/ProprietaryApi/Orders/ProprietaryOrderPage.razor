@@ -2,11 +2,12 @@
 @using FjordTours.App.DistributorApi.Components
 @using FjordTours.App.DistributorApi.Infrastructure.Extensions
 @using FjordTours.App.DistributorApi.Infrastructure.State
-@using FjordTours.Channel.Distributor2.Client.DistributorApi.Proprietary.Contracts
 @using FjordTours.Channel.Distributor2.Common.DistributorApi.Constants
-@using FjordTours.Channel.Distributor2.Common.DistributorApi.Dtos.DistributorApi.Transaction.Order
+@using FjordTours.DistributorApi.Proprietary.Contracts
+@using FjordTours.DistributorApi.Common.Constants
+@using FjordTours.DistributorApi.Common.Transaction.Order
 @using System.Timers
-@using FjordTours.Channel.Distributor2.Common.DistributorApi.Enums
+@using FjordTours.DistributorApi.Common.Enums
 @using Humanizer
 @inherits AppProtectedPage
 @implements IDisposable
@@ -65,6 +66,7 @@
                 <MudText Typo="Typo.h6">Order @_order.Reference</MudText>
                 <MudText Typo="Typo.body1"><MudChip>@_order.OrderState</MudChip> / <MudChip>@_order.PaymentState</MudChip></MudText>
                 <MudText Typo="Typo.body1">Balance: @_order.SettlementBalance?.ToMoneyString().ToHyphenIfNullOrEmpty()</MudText>
+                <MudText Typo="Typo.body1">Contract Type: @_order.ContractType?.ToHyphenIfNullOrEmpty()</MudText>
                 <MudText Typo="Typo.body1">
                     Created: @_order.CreatedTimestamp.ToDateTimeString() <br />
                     <MudAlert Severity="Severity.Info">@_order.CreatedTimestamp.Humanize()</MudAlert>

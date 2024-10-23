@@ -24,6 +24,11 @@ else
         </MudItem>
 
         <MudItem xs="12">
+            <MudText>Current Contract Type</MudText>
+            <MudText Typo="Typo.button">@AppState.DistributorProfile.CurrentContractType.ToHyphenIfNullOrEmpty()</MudText>
+        </MudItem>
+
+        <MudItem xs="12">
             <MudText>Payment Methods</MudText>
             @if (!AppState.DistributorProfile.PaymentMethods.Any())
             {

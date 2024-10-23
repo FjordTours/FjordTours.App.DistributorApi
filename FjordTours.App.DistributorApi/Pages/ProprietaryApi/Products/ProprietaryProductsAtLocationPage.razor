@@ -3,12 +3,13 @@
 @using FjordTours.App.DistributorApi.Infrastructure.Constants
 @using FjordTours.App.DistributorApi.Infrastructure.Extensions
 @using FjordTours.App.DistributorApi.Infrastructure.State
-@using FjordTours.Channel.Distributor2.Client.DistributorApi.Proprietary.Contracts
-@using FjordTours.Channel.Distributor2.Common.DistributorApi.Constants
-@using FjordTours.Channel.Distributor2.Common.DistributorApi.Dtos.DistributorApi.Complaints
-@using FjordTours.Channel.Distributor2.Common.DistributorApi.Dtos.DistributorApi.MasterData
-@using FjordTours.Channel.Distributor2.Common.DistributorApi.Dtos.DistributorApi.Transaction.ActivityAvailabilityCalendar
-@using FjordTours.Channel.Distributor2.Common.DistributorApi.Dtos.DistributorApi.Transaction.AvailableProductsAtLocation
+@using FjordTours.DistributorApi.Common.Enums
+@using FjordTours.DistributorApi.Proprietary.Contracts
+@using FjordTours.DistributorApi.Common.Constants
+@using FjordTours.DistributorApi.Common.Complaints
+@using FjordTours.DistributorApi.Common.MasterData
+@using FjordTours.DistributorApi.Common.Transaction.ActivityAvailabilityCalendar
+@using FjordTours.DistributorApi.Common.Transaction.AvailableProductsAtLocation
 @inherits AppProtectedPage
 
 <h1>Proprietary Api - Products - At Location</h1>
@@ -48,11 +49,11 @@
                     </MudChip>
                 </MudTd>
                 <MudTd DataLabel="More">
-                    @if (context.ProductType is Channel.Distributor2.Common.DistributorApi.Enums.ProductType.Activity)
+                    @if (context.ProductType is ProductType.Activity)
                     {
                         <MudLink Href="@($"/proprietary/activity/offers/{context.ProductId}/{context.DepartureDate.ToUrlDateString()}")">Get Offers</MudLink>
                     }
-                    else if (context.ProductType is Channel.Distributor2.Common.DistributorApi.Enums.ProductType.Composite)
+                    else if (context.ProductType is ProductType.Composite)
                     {
                         <MudLink Href="@($"/proprietary/bundle/offers/{context.ProductId}/{context.DepartureDate.ToUrlDateString()}")">Get Offers</MudLink>
                     }

@@ -9,7 +9,14 @@
 
 <h1>Dashboard</h1>
 
-@AppState?.DistributorProfile?.Name.ToHyphenIfNullOrEmpty()
+<h2>Distributor</h2>
+
+<MudAlert Severity="Severity.Info">
+    <h3>@AppState?.DistributorProfile?.Name.ToHyphenIfNullOrEmpty()</h3>
+    Registration Number: <b>@AppState?.DistributorProfile?.RegistrationNumber</b><br />
+    Current Contract type: <b>@AppState?.DistributorProfile?.CurrentContractType</b><br />
+</MudAlert>
+
 
 <h2>Proprietary Api</h2>
 
@@ -18,31 +25,12 @@
     Provides most flexibility, including management and configuration functionality.
 </MudAlert>
 
-<MudGrid>
-    <MudItem xs="6">
-        <MudCard>
-            <MudCardContent>
-                <MudText>User Management</MudText>
-                <MudText Typo="Typo.body2">
-                    The quick, brown fox jumps over a lazy dog.
-                </MudText>
-            </MudCardContent>
-            <MudCardActions>
-                <MudButton Variant="Variant.Text" 
-                           Color="Color.Primary">Try it</MudButton>
-            </MudCardActions>
-        </MudCard>
-    </MudItem>
-</MudGrid>
-
-
 
 <h2>OCTO Api</h2>
 
 <MudAlert Severity="Severity.Info">
     OCTO is an industry standard for ours, activities & attractions.
 </MudAlert>
-
 
 
 <h2>OSDM Api</h2>

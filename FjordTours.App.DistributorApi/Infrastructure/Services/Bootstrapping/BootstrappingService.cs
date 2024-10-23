@@ -1,5 +1,5 @@
 ﻿using FjordTours.App.DistributorApi.Infrastructure.State;
-using FjordTours.Channel.Distributor2.Client.DistributorApi.Proprietary.Contracts;
+using FjordTours.DistributorApi.Proprietary.Contracts;
 
 namespace FjordTours.App.DistributorApi.Infrastructure.Services.Bootstrapping
 {
