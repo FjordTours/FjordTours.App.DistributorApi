@@ -1,4 +1,4 @@
-﻿using FjordTours.Channel.Distributor2.Common.DistributorApi.Dtos.DistributorApi.Common;
+﻿using FjordTours.DistributorApi.Common.Common;
 
 namespace FjordTours.App.DistributorApi.Infrastructure.Extensions
 {

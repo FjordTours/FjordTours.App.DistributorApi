@@ -1,5 +1,5 @@
 ﻿using FjordTours.App.DistributorApi.Infrastructure.State;
-using FjordTours.Channel.Distributor2.Client.DistributorApi.Auth.Config;
+using FjordTours.DistributorApi.Auth.Config;
 using Microsoft.AspNetCore.Components;
 
 namespace FjordTours.App.DistributorApi.Components

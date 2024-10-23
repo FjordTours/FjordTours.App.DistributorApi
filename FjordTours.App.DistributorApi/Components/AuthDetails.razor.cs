@@ -3,8 +3,8 @@ using FjordTours.App.DistributorApi.Infrastructure.Constants;
 using FjordTours.App.DistributorApi.Infrastructure.Models;
 using FjordTours.App.DistributorApi.Infrastructure.Services.Bootstrapping;
 using FjordTours.App.DistributorApi.Infrastructure.State;
-using FjordTours.Channel.Distributor2.Client.DistributorApi.Auth.Config;
-using FjordTours.Channel.Distributor2.Client.DistributorApi.Proprietary.Contracts;
+using FjordTours.DistributorApi.Auth.Config;
+using FjordTours.DistributorApi.Proprietary.Contracts;
 using Microsoft.AspNetCore.Components;
 using MudBlazor;
 

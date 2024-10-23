@@ -1,7 +1,7 @@
-﻿using FjordTours.Channel.Distributor2.Common.DistributorApi.Dtos.DistributorApi.Management.Profile;
-using FjordTours.Channel.Distributor2.Common.DistributorApi.Dtos.DistributorApi.MasterData;
-using FjordTours.Channel.Distributor2.Common.DistributorApi.Dtos.DistributorApi.Product;
-using FjordTours.Channel.Distributor2.Common.DistributorApi.Dtos.DistributorApi.Utility;
+﻿using FjordTours.DistributorApi.Common.Management.Profile;
+using FjordTours.DistributorApi.Common.MasterData;
+using FjordTours.DistributorApi.Common.Product;
+using FjordTours.DistributorApi.Common.Utility;
 
 namespace FjordTours.App.DistributorApi.Infrastructure.State
 {
