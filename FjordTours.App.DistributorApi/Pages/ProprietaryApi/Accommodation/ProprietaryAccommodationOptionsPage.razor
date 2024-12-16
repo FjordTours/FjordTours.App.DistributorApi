@@ -1,0 +1,235 @@
+﻿@page "/proprietary/accommodation/options-at-location/{LocationId:Guid?}"
+@using FjordTours.App.DistributorApi.Components
+@using FjordTours.App.DistributorApi.Infrastructure.Extensions
+@using FjordTours.App.DistributorApi.Infrastructure.State
+@using FjordTours.DistributorApi.Common.Constants
+@using FjordTours.DistributorApi.Common.MasterData
+@using FjordTours.DistributorApi.Common.Transaction.AccommodationAvailabilityOption
+@using FjordTours.DistributorApi.Common.Transaction.Common
+@using FjordTours.DistributorApi.Proprietary.Contracts
+@inherits AppProtectedPage
+
+<h1>Proprietary Api - Accommodation - Options At Location</h1>
+
+@if (HasAccessToEndpointCategory(EndpointConstants.AvailabilityAccommodation))
+{
+    if (_isLoading)
+    {
+        <MudProgressLinear Color="Color.Primary" Indeterminate="true" Class="my-7" />
+    }
+    else
+    {
+        <MudGrid>
+            <MudItem xs="12">
+                <MudAlert Severity="Severity.Info">
+                    Choose location and date. The search will be done for 1 night and 2 adults in one room.
+                </MudAlert>
+            </MudItem>
+            <MudItem xs="4">
+                <MudAutocomplete T="LocationDto"
+                Label="Location"
+                @bind-Value="_selectedLocation"
+                SearchFunc="@SearchLocation"
+                ToStringFunc="@(e => e==null ? null : $"{e.Name}")" />
+            </MudItem>
+            <MudItem xs="4">
+                <MudDatePicker @ref="_formDatePicker"
+                @bind-Date="_checkInDate"
+                Class="ma-2"
+                Label="Date"
+                Editable="true"
+                Margin="Margin.Dense"
+                Mask="@(new DateMask("dd.MM.yyyy"))"
+                DateFormat="dd.MM.yyyy"
+                HelperText="DD.MM.YYYY"
+                HelperTextOnFocus=true
+                Validation="@ValidateDate" />
+            </MudItem>
+            <MudItem xs="4">
+                <MudAutocomplete T="SegmentDto"
+                Label="Segment"
+                @bind-Value="_selectedSegment"
+                SearchFunc="@SearchSegment"
+                ToStringFunc="@(e => e==null ? null : $"{e.Name}")" />
+            </MudItem>
+            <MudItem xs="12">
+                <MudButton Variant="Variant.Filled"
+                Color="Color.Primary"
+                Disabled="@_isSearching"
+                DisableElevation="true"
+                OnClick="@(() => Search())">
+                    Search
+                </MudButton>
+            </MudItem>
+            <MudItem xs="12">
+                <MudDivider />
+            </MudItem>
+            <MudItem xs="12">
+                @if (_propertyOptions is null ||
+                    !_propertyOptions.Properties.Any())
+                {
+                    <MudAlert Severity="Severity.Info">
+                        Currently no property options to show.
+                    </MudAlert>
+                }
+                else
+                {
+                    <MudTable Items="_propertyOptions.Properties.OrderBy(p => p.ProductName)"
+                    Hover="true"
+                    Breakpoint="Breakpoint.Sm">
+                        <HeaderContent>
+                            <MudTh></MudTh>
+                            <MudTh>Name</MudTh>
+                            <MudTh>Options</MudTh>
+                        </HeaderContent>
+                        <RowTemplate>
+                            <MudTd DataLabel="Image" Style="width: 150px">
+                                @if (context.ImageUrls.Any())
+                                {
+                                    var imageUrl = context.ImageUrls.First();
+                                    <MudImage Src="@imageUrl" 
+                                    Alt="@context.ProductName"
+                                    Width="200"
+                                    Elevation="25" 
+                                    Class="rounded-lg" />
+                                }
+                            </MudTd>
+                            <MudTd DataLabel="Name"><MudText Typo="Typo.button">@context.ProductName</MudText></MudTd>
+                            <MudTd DataLabel="Options">
+                                @{
+                                    var tg = context.TravelerGroups.FirstOrDefault();
+                                }
+                                @if (tg is not null &&
+                                     tg.Options.Any())
+                                {
+                                    <ol>
+                                        @foreach (var o in tg.Options)
+                                        {
+                                            <li>
+                                                <MudChip>@o.UnitTypeName</MudChip> / <MudChip>@o.RatePlanName</MudChip>
+                                                <br />
+                                                <MudLink Href="@($"/proprietary/accommodation/offers/{context.ProductId}/{_propertyOptions.CheckInDate.ToUrlDateString()}/{o.OptionId}")">Get Offers</MudLink>
+                                                </li>
+                                        }
+                                    </ol>
+                                }
+                                else
+                                {
+                                    <MudAlert Severity="Severity.Info">Sorry, there are no options.</MudAlert>
+                                }
+                            </MudTd>
+                            <MudTd DataLabel="More">
+                            </MudTd>
+                        </RowTemplate>
+                    </MudTable>
+                }
+            </MudItem>
+        </MudGrid>
+    }
+}
+else
+{
+    <MudAlert Severity="Severity.Warning"> Sorry, distributor does not seem to have access to this functionality.</MudAlert>
+}
+
+@code{
+
+    [Inject]
+    AppState AppSate { get; set; } = default!;
+
+    [Inject]
+    IApiContract ApiClient { get; set; } = default!;
+
+    [Parameter]
+    public Guid? LocationId { get; set; }
+
+    bool _isLoading = true;
+    bool _isSearching = false;
+    SegmentDto? _selectedSegment = null;
+    MudDatePicker _formDatePicker { get; set; } = default!;
+    DateTime? _checkInDate = DateTime.Now.AddDays(7);
+    IEnumerable<LocationDto>? _locations = null;
+    LocationDto? _selectedLocation = null;
+    AccommodationAvailabilityPropertiesDto? _propertyOptions = null;
+
+    protected override void OnParametersSet()
+    {
+        _locations = AppState.Locations!.AsEnumerable();
+        if (LocationId is not null)
+        {
+            _selectedLocation = _locations.FirstOrDefault(l => l.Id == LocationId);
+        }
+        _isLoading = false;
+        StateHasChanged();
+    }
+
+    Task<IEnumerable<LocationDto>> SearchLocation(string value)
+    {
+        if (_locations is null) return Task.FromResult(Enumerable.Empty<LocationDto>());
+        // if text is null or empty, show complete list
+        if (string.IsNullOrEmpty(value))
+            return Task.FromResult(_locations);
+        return Task.FromResult(_locations.Where(x => x.Name.Contains(
+            value, StringComparison.InvariantCultureIgnoreCase)));
+    }
+
+    Task<IEnumerable<SegmentDto>> SearchSegment(string value)
+    {
+        // if text is null or empty, show complete list
+        if (string.IsNullOrEmpty(value))
+            return Task.FromResult(AppState.Segments!.AsEnumerable());
+        return Task.FromResult(AppState.Segments!.Where(x => x.Name.Contains(
+            value, StringComparison.InvariantCultureIgnoreCase)));
+    }
+
+    async Task Search()
+    {
+        if (_selectedLocation is null ||
+            _checkInDate is null) return;
+        _isSearching = true;
+        _propertyOptions = null;
+        var optionsResponse = await ApiClient.GetAccommodationAvailabilityOptionsAsync(
+            new AccommodationAvailabilityOptionsRequest() {
+                LocationId = _selectedLocation.Id,
+                SegmentId = _selectedSegment!.Id,
+                ProductBundleId = null,
+                CheckInDate = DateOnly.FromDateTime(_checkInDate.Value),
+                CheckOutDate = DateOnly.FromDateTime(_checkInDate.Value.AddDays(1)),
+                TravelerGroups = new List<AccommodationOffersRequestTravelGroupDto>() {
+                    new AccommodationOffersRequestTravelGroupDto() {
+                        GroupNumber = 1,
+                        Travelers = new List<AccommodationOffersRequestTravelerDto>() {
+                            new AccommodationOffersRequestTravelerDto() {
+                                PaxRph = 0,
+                                TicketTypeId = DistributorApiConstants.Adult,
+                                Age = 44
+                            },
+                            new AccommodationOffersRequestTravelerDto() {
+                                PaxRph = 1,
+                                TicketTypeId = DistributorApiConstants.Adult,
+                                Age = 44
+                            }
+                        }
+                    }
+                }
+            });
+        _propertyOptions = optionsResponse?.Value;
+        _isSearching = false;
+        StateHasChanged();
+    }
+
+    Func<DateTime?, string> ValidateDate = (date) =>
+    {
+        if (date == null)
+        {
+            return "Required";
+        }
+
+        if (DateTime.Now.Date > date)
+        {
+            return "Date can't be from the past";
+        }
+        return "";
+    };
+
+}

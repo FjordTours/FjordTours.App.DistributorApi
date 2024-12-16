@@ -1,33 +1,30 @@
-﻿@page "/proprietary/activity/offers/{ProductId:guid}/{TravelDate:datetime}"
+﻿@page "/proprietary/accommodation/offers/{ProductId:guid}/{CheckInDate:datetime}/{OptionId}"
 @using FjordTours.App.DistributorApi.Components
 @using FjordTours.App.DistributorApi.Infrastructure.Constants
 @using FjordTours.App.DistributorApi.Infrastructure.Extensions
 @using FjordTours.App.DistributorApi.Infrastructure.State
-@using FjordTours.DistributorApi.Proprietary.Contracts
 @using FjordTours.DistributorApi.Common.Constants
-@using FjordTours.DistributorApi.Common.Complaints
 @using FjordTours.DistributorApi.Common.MasterData
 @using FjordTours.DistributorApi.Common.Transaction.AcceptOffer
-@using FjordTours.DistributorApi.Common.Transaction.ActivityAvailabilityCalendar
-@using FjordTours.DistributorApi.Common.Transaction.ActivityOffer
+@using FjordTours.DistributorApi.Common.Transaction.AccommodationOffer
 @using FjordTours.DistributorApi.Common.Transaction.Common
-@using FjordTours.DistributorApi.Common.Enums
+@using FjordTours.DistributorApi.Proprietary.Contracts
 @inherits AppProtectedPage
 
-<h1>Proprietary Api - Activity - Offers</h1>
+<h1>Proprietary Api - Accommodation - Offers</h1>
 
 @if (HasAccessToEndpointCategory(EndpointConstants.BookingFlow))
 {
     if (_isLoading)
     {
         <MudProgressCircular Color="Color.Primary"
-                             Size="Size.Large"
-                             Indeterminate="true" />
+        Size="Size.Large"
+        Indeterminate="true" />
     }
     else if (_offers is null)
     {
         <MudAlert Severity="Severity.Info">
-            No activity offer to show.
+            No accommodation offer to show.
         </MudAlert>
     }
     else
@@ -84,8 +81,7 @@
                                 </MudCardHeader>
                                 <MudCardContent>
                                     <MudText>Date / Time</MudText>
-                                    <MudText Typo="Typo.button">@offer.StartDateTime.ToDateTimeString() - @offer.EndDateTime.ToDateTimeString()</MudText>
-
+                                    <MudText Typo="Typo.button">@offer.CheckInDate.ToDateString() - @offer.CheckOutDate.ToDateString()</MudText>
                                     <MudText>Availability</MudText>
                                     <MudText Typo="Typo.button">
                                         <MudChip Color="@(offer.Availability?.MinimumAvailable > 0 ? Color.Success : Color.Error)">
@@ -106,8 +102,8 @@
                                     @if ((offer.Availability?.MinimumAvailable ?? 0) > 0)
                                     {
                                         <MudButton Variant="Variant.Filled"
-                                                   Color="Color.Primary"
-                                                   OnClick="@(() => Accept(offer))">
+                                        Color="Color.Primary"
+                                        OnClick="@(() => Accept(offer))">
                                             Accept
                                         </MudButton>
                                     }
@@ -129,7 +125,8 @@ else
     <MudAlert Severity="Severity.Warning"> Sorry, distributor does not seem to have access to this functionality.</MudAlert>
 }
 
-@code {
+@code 
+{
 
     [Inject]
     AppState AppSate { get; set; } = default!;
@@ -144,11 +141,14 @@ else
     public Guid ProductId { get; set; }
 
     [Parameter]
-    public DateTime TravelDate { get; set; }
+    public DateTime CheckInDate { get; set; }
+
+    [Parameter]
+    public string OptionId { get; set; }
 
     bool _isLoading = false;
     SegmentDto? _selectedSegment = null;
-    ActivityOffersResponse? _offers { get; set; } = null;
+    AccommodationOffersResponse? _offers { get; set; } = null;
     Guid _correlationId = Guid.NewGuid();
     string _distributorBookingReference = new string(Faker.Lorem.Letters(8).ToArray());
     string _orderName = Faker.Lorem.Word();
@@ -165,17 +165,32 @@ else
         if (_selectedSegment is not null &&
             ProductId != Guid.Empty)
         {
-            var offersResult = await ApiClient.GetActivityOffersAsync(
-                new ActivityOffersRequest() {
+            var offersResult = await ApiClient.GetAccommodationOffersAsync(
+                new AccommodationOffersRequest() { 
                     ProductId = ProductId,
                     SegmentId = _selectedSegment.Id,
-                    DepartureDate = TravelDate,
-                    Travelers = new List<OffersRequestTravelerDto>() {
-                        new OffersRequestTravelerDto() { 
-                            PaxRph = 0,
-                            TicketTypeId = DistributorApiConstants.Adult
+                    ProductBundleId = null,
+                    CheckInDate = DateOnly.FromDateTime(CheckInDate),
+                    CheckOutDate = DateOnly.FromDateTime(CheckInDate.AddDays(1)),
+                    TravelerGroups = new List<AccommodationOffersOptionRequestTravelGroupDto>() { 
+                        new AccommodationOffersOptionRequestTravelGroupDto() { 
+                            GroupNumber = 1,
+                            OptionId = OptionId,
+                            Travelers = new List<AccommodationOffersRequestTravelerDto>() {
+                                new AccommodationOffersRequestTravelerDto() {
+                                    PaxRph = 0,
+                                    TicketTypeId = DistributorApiConstants.Adult,
+                                    Age =44
+                                },
+                                new AccommodationOffersRequestTravelerDto() {
+                                    PaxRph = 1,
+                                    TicketTypeId = DistributorApiConstants.Adult,
+                                    Age =44
+                                }
+                            }
                         }
-                    }
+                    },
+                    LateArrival = false
                 });
             _offers = offersResult?.Value;
         }
@@ -183,26 +198,26 @@ else
         StateHasChanged();
     }
 
-    private async Task Accept(ActivityOfferDto offer)
+    private async Task Accept(AccommodationOfferDto offer)
     {
         if (offer.OfferId is null)
             return;
         var acceptResult = await ApiClient.AcceptOfferAsync(
             new AcceptOfferRequest() {
-                OfferContainerId = _offers!.OfferContainerId,
-                OfferId = offer.OfferId.Value,
-                CorrelationId = _correlationId,
-                DistributorBookingReference = _distributorBookingReference,
-                OrderName = _orderName,
-                AdministrativeContact = new AdministrativeContactDto() { 
-                    FirstName = _firstName,
-                    LastName = _lastName,
-                    Email = _email,
-                    MobilePhone = _phone,
-                    CountryId = AppConstants.NorwayCountryId
-                },
-                PropertyBag = new List<KeyValuePair<string, string>>()
-            });
+                    OfferContainerId = _offers!.OfferContainerId,
+                    OfferId = offer.OfferId.Value,
+                    CorrelationId = _correlationId,
+                    DistributorBookingReference = _distributorBookingReference,
+                    OrderName = _orderName,
+                    AdministrativeContact = new AdministrativeContactDto() {
+                        FirstName = _firstName,
+                        LastName = _lastName,
+                        Email = _email,
+                        MobilePhone = _phone,
+                        CountryId = AppConstants.NorwayCountryId
+                    },
+                    PropertyBag = new List<KeyValuePair<string, string>>()
+                });
         NavigationManager.NavigateTo($"/proprietary/order/{_offers.OfferContainerId}");
     }
 

@@ -39,14 +39,14 @@
                     _ => "?"
                 };
                 var proceedLink = product.ProductType switch {
-                    ProductType.Accommodation => $"#",
+                    ProductType.Accommodation => $"/proprietary/accommodation/options-at-location",
                     ProductType.Activity => $"/proprietary/activity/calendar/{product.Id}",
                     ProductType.Composite => $"/proprietary/bundle/calendar/{product.Id}",
                     ProductType.Transport => $"/proprietary/transport/options/{product.Id}",
                     _ => "#"
                 };
                 var linkName = product.ProductType switch {
-                    ProductType.Accommodation => "N/A",
+                    ProductType.Accommodation => "Accommodation Offers",
                     ProductType.Activity => "Availability Calendar",
                     ProductType.Composite => "Bundle Calendar",
                     ProductType.Transport => "Transport Options",
@@ -123,7 +123,6 @@
                             {
                                 <span>N/A</span>
                             }
-                            
                         </MudCardActions>
                     </MudCard>
                 </MudItem>
