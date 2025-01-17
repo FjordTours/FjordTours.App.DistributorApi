@@ -15,14 +15,14 @@
     <MudGrid>
         <MudItem xs="12">
             <MudAutocomplete Required="true"
-                             T="SegmentDto"
-                             Class="ma-2"
-                             Label="Segment"
-                             AutoFocus="true"
-                             ValueChanged="@(s => OnSegmentChanged(s))"
-                             Value="@_selectedSegment"
-                             ToStringFunc="@(x => x == null ? "" : $"{x.Name}")"
-                             SearchFunc="@SearchForSegment">
+            T="SegmentDto"
+            Class="ma-2"
+            Label="Segment"
+            AutoFocus="true"
+            ValueChanged="@(s => OnSegmentChanged(s))"
+            Value="@_selectedSegment"
+            ToStringFunc="@(x => x == null ? "" : $"{x.Name}")"
+            SearchFunc="@SearchForSegment">
                 <ItemTemplate Context="segment">
                     <MudText>
                         @segment.Name
@@ -34,8 +34,8 @@
         {
             <MudItem xs="12">
                 <MudProgressCircular Color="Color.Primary"
-                                     Size="Size.Large"
-                                     Indeterminate="true" />
+                Size="Size.Large"
+                Indeterminate="true" />
             </MudItem>
         }
         else if (_availCalendar is null)
@@ -50,8 +50,8 @@
         {
             <MudItem xs="12">
                 <MudTable Items="_availCalendar.DailyAvailability.OrderBy(d => d.Date)"
-                          Hover="true"
-                          Breakpoint="Breakpoint.Sm">
+                Hover="true"
+                Breakpoint="Breakpoint.Sm">
                     <HeaderContent>
                         <MudTh>Date</MudTh>
                         <MudTh>Availability</MudTh>
@@ -67,12 +67,13 @@
                         <MudTd DataLabel="More">
                             @if (context.UnitsAvailable > 0)
                             {
-                                <MudLink Href="@($"/proprietary/bundle/offers/{ProductId}/{context.Date.ToUrlDateString()}")">Get Offers</MudLink>
+                                _getOffersText = "Get offers";
                             }
                             else
                             {
-                                <span>N/A</span>
+                                _getOffersText = "Not available, try getting offers anyway";
                             }
+                            <span><MudLink Href="@($"/proprietary/bundle/offers/{ProductId}/{ProductVariationId}/{context.Date.ToUrlDateString()}/{_selectedSegment!.Id}")">@_getOffersText</MudLink></span>
                         </MudTd>
                     </RowTemplate>
                 </MudTable>
@@ -103,6 +104,7 @@ else
     SegmentDto? _selectedSegment = null;
     BundleAvailabilityCalendarDto? _availCalendar { get; set; } = null;
     DateTimeOffset? _selectedDate = null;
+    string _getOffersText = "Get Offers"; 
 
     protected override async Task OnParametersSetAsync()
     {
