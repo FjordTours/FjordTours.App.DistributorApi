@@ -1,0 +1,237 @@
+﻿@page "/proprietary/bundle/offers/{ProductId:guid}/{ProductVariationId:guid}/{TravelDate:datetime}/{SegmentId:guid}"
+@using FjordTours.App.DistributorApi.Components
+@using FjordTours.App.DistributorApi.Infrastructure.Constants
+@using FjordTours.App.DistributorApi.Infrastructure.Extensions
+@using FjordTours.App.DistributorApi.Infrastructure.State
+@using FjordTours.DistributorApi.Common.Transaction.BundleOffer
+@using FjordTours.DistributorApi.Common.Constants
+@using FjordTours.DistributorApi.Common.MasterData
+@using FjordTours.DistributorApi.Common.Transaction.AcceptOffer
+@using FjordTours.DistributorApi.Common.Transaction.Common
+@using FjordTours.DistributorApi.Common.Enums
+@using FjordTours.DistributorApi.Proprietary.Contracts
+@inherits AppProtectedPage
+
+<h1>Proprietary Api - Bundle - Offers</h1>
+
+@if (HasAccessToEndpointCategory(EndpointConstants.BookingFlow))
+{
+    if (_isLoading)
+    {
+        <MudProgressCircular Color="Color.Primary"
+        Size="Size.Large"
+        Indeterminate="true" />
+    }
+    else if (_offer is null ||
+             _offer.Offer is null)
+    {
+        <MudAlert Severity="Severity.Info">
+            No bundle offer to show.
+        </MudAlert>
+    }
+    else
+    {
+        var product = AppState.Products.FirstOrDefault(p => p.Id == ProductId);
+        <MudGrid>
+            <MudItem xs="12">
+                <h2>Metadata</h2>
+                <MudText Typo="Typo.h6">Offer Container Id</MudText>
+                <MudText Typo="Typo.button">@_offer.OfferContainerId.ToString()</MudText>
+                <MudAlert Severity="Severity.Info">
+                    Offers are searched for one adult.
+                </MudAlert>
+            </MudItem>
+            <MudItem xs="12">
+                <h2>Order Data</h2>
+                <MudAlert Severity="Severity.Info">
+                    Accepting one of the offers below will submit the following data:
+                </MudAlert>
+
+                <MudText Typo="Typo.h6">Correlation Id</MudText>
+                <MudText Typo="Typo.button">@_correlationId</MudText>
+
+                <MudText Typo="Typo.h6">Order Name</MudText>
+                <MudText Typo="Typo.button">@_orderName</MudText>
+
+                <MudText Typo="Typo.h6">Distributor Booking Reference</MudText>
+                <MudText Typo="Typo.button">@_distributorBookingReference</MudText>
+
+                <MudText Typo="Typo.h6">Name</MudText>
+                <MudText Typo="Typo.button">@_firstName @_lastName</MudText>
+
+                <MudText Typo="Typo.h6">Email</MudText>
+                <MudText Typo="Typo.button">@_email</MudText>
+
+                <MudText Typo="Typo.h6">Phone</MudText>
+                <MudText Typo="Typo.button">@_phone</MudText>
+            </MudItem>
+            <MudItem xs="12">
+                <h2>Offer</h2>
+                <MudGrid>
+                    <MudItem xs="12">
+                        <MudCard style="min-height: 100px;">
+                            <MudCardHeader>
+                                <CardHeaderAvatar>
+                                    <MudAvatar Color="Color.Primary">A</MudAvatar>
+                                </CardHeaderAvatar>
+                                <CardHeaderContent>
+                                    <MudText Typo="Typo.h6">@product?.InternalName.ToHyphenIfNullOrEmpty()</MudText>
+                                    <MudText Typo="Typo.button">@product?.ProductType.ToString().ToHyphenIfNullOrEmpty()</MudText>
+                                </CardHeaderContent>
+                            </MudCardHeader>
+                            <MudCardContent>
+                                <MudText>Date / Time</MudText>
+                                <MudText Typo="Typo.button">@_offer.Offer.StartDateTime.ToDateTimeString() - @_offer.Offer.EndDateTime.ToDateTimeString()</MudText>
+
+                                <MudText>Route</MudText>
+                                <MudTimeline TimelineOrientation="TimelineOrientation.Vertical"
+                                TimelinePosition="TimelinePosition.Top">
+                                    @foreach (var loc in _offer.Offer.Route.OrderBy(l => l.Index))
+                                    {
+                                        <MudTimelineItem Size="Size.Small"
+                                                         Color="Color.Secondary"
+                                                         TimelineAlign="TimelineAlign.End"
+                                                         Elevation="20">
+                                            <MudCard Elevation="25">
+                                                <MudCardContent>
+                                                    <MudText Typo="Typo.h6">@loc.LocationName</MudText>
+                                                    @if (loc.Transport is not null)
+                                                    {
+                                                        <MudText Typo="Typo.subtitle1">Transport</MudText>
+                                                        <MudText Typo="Typo.caption">@loc.Transport.DepartureCode</MudText>
+                                                    }
+                                                    @if (loc.Accommodation is not null)
+                                                    {
+                                                        <MudText Typo="Typo.subtitle1">Accommodation</MudText>
+                                                        <MudText Typo="Typo.caption">@loc.Accommodation.ProductName</MudText>
+                                                    }
+                                                </MudCardContent>
+                                            </MudCard>
+                                        </MudTimelineItem>
+                                    }
+                                </MudTimeline>
+
+                                <MudText>Availability</MudText>
+                                <MudText Typo="Typo.button">
+                                    <MudChip Color="@(_offer.Offer.Availability?.MinimumAvailable > 0 ? Color.Success : Color.Error)">
+                                        @_offer.Offer.Availability?.MinimumAvailable
+                                    </MudChip>
+                                </MudText>
+
+                                <MudText>Sales Fare</MudText>
+                                <MudText Typo="Typo.button">@_offer.Offer.SalesFare?.Code (v: @_offer.Offer.SalesFare?.SalesFareVersion)</MudText>
+
+                                <MudText>Retail Price</MudText>
+                                <MudText Typo="Typo.button">@_offer.Offer.RetailPrice?.ToMoneyString()</MudText>
+
+                                <MudText>Distributor Commission</MudText>
+                                <MudText Typo="Typo.button">@_offer.Offer.DistributorCommission?.ToMoneyString()</MudText>
+                            </MudCardContent>
+                            <MudCardActions>
+                                @if ((_offer.Offer.Availability?.MinimumAvailable ?? 0) > 0)
+                                {
+                                    <MudButton Variant="Variant.Filled"
+                                               Color="Color.Primary"
+                                               OnClick="@(() => Accept(_offer.Offer))">
+                                        Accept
+                                    </MudButton>
+                                }
+                                else
+                                {
+                                    <span>N/A</span>
+                                }
+                            </MudCardActions>
+                        </MudCard>
+                    </MudItem>
+                </MudGrid>
+            </MudItem>
+        </MudGrid>
+    }
+}
+else
+{
+    <MudAlert Severity="Severity.Warning"> Sorry, distributor does not seem to have access to this functionality.</MudAlert>
+}
+
+@code {
+
+    [Inject]
+    AppState AppSate { get; set; } = default!;
+
+    [Inject]
+    IApiContract ApiClient { get; set; } = default!;
+
+    [Inject]
+    NavigationManager NavigationManager { get; set; } = default!;
+
+    [Parameter]
+    public Guid ProductId { get; set; }
+
+    [Parameter]
+    public Guid ProductVariationId { get; set; }
+
+    [Parameter]
+    public DateTime TravelDate { get; set; }
+
+    [Parameter]
+    public Guid SegmentId { get; set; }
+
+    bool _isLoading = false;
+    BundleOfferResponse? _offer { get; set; } = null;
+    Guid _correlationId = Guid.NewGuid();
+    string _distributorBookingReference = new string(Faker.Lorem.Letters(8).ToArray());
+    string _orderName = Faker.Lorem.Word();
+    string _firstName = Faker.Name.FirstName();
+    string _lastName = Faker.Name.LastName();
+    string _email = Faker.User.Email();
+    string _phone = $"+47{Faker.Number.RandomNumber(111111111, 999999999)}";
+
+    protected override async Task OnParametersSetAsync()
+    {
+        _isLoading = true;
+        StateHasChanged();
+        if (SegmentId != Guid.Empty &&
+            ProductId != Guid.Empty)
+        {
+            var offersResult = await ApiClient.GetBundleOfferAsync(
+                new BundleOffersRequest() {
+                        ProductId = ProductId,
+                        ProductVariationId = ProductVariationId,
+                        SegmentId = SegmentId,
+                        DepartureDate = TravelDate,
+                        Travelers = new List<OffersRequestTravelerDto>() {
+                        new OffersRequestTravelerDto() {
+                            PaxRph = 0,
+                            TicketTypeId = DistributorApiConstants.Adult
+                        }}
+                    });
+            _offer = offersResult?.Value;
+        }
+        _isLoading = false;
+        StateHasChanged();
+    }
+
+    private async Task Accept(BundleOfferDto offer)
+    {
+        if (offer.OfferId is null)
+            return;
+        var acceptResult = await ApiClient.AcceptOfferAsync(
+            new AcceptOfferRequest() {
+                    OfferContainerId = _offer!.OfferContainerId,
+                    OfferId = offer.OfferId.Value,
+                    CorrelationId = _correlationId,
+                    DistributorBookingReference = _distributorBookingReference,
+                    OrderName = _orderName,
+                    AdministrativeContact = new AdministrativeContactDto() {
+                        FirstName = _firstName,
+                        LastName = _lastName,
+                        Email = _email,
+                        MobilePhone = _phone,
+                        CountryId = AppConstants.NorwayCountryId
+                    },
+                    PropertyBag = new List<KeyValuePair<string, string>>()
+                });
+        NavigationManager.NavigateTo($"/proprietary/order/{_offer.OfferContainerId}");
+    }
+
+}
