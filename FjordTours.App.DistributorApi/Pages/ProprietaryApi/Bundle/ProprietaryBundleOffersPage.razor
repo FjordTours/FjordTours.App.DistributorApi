@@ -113,7 +113,7 @@
 
                                 <MudText>Availability</MudText>
                                 <MudText Typo="Typo.button">
-                                    <MudChip Color="@(_offer.Offer.Availability?.MinimumAvailable > 0 ? Color.Success : Color.Error)">
+                                    <MudChip T="string" Color="@(_offer.Offer.Availability?.MinimumAvailable > 0 ? Color.Success : Color.Error)">
                                         @_offer.Offer.Availability?.MinimumAvailable
                                     </MudChip>
                                 </MudText>

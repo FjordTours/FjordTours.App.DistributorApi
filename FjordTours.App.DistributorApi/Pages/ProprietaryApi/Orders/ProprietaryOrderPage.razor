@@ -64,14 +64,14 @@
             </MudItem>
             <MudItem xs="4">
                 <MudText Typo="Typo.h6">Order @_order.Reference</MudText>
-                <MudText Typo="Typo.body1"><MudChip>@_order.OrderState</MudChip> / <MudChip>@_order.PaymentState</MudChip></MudText>
+                <MudText Typo="Typo.body1"><MudChip T="string">@_order.OrderState</MudChip> / <MudChip T="string">@_order.PaymentState</MudChip></MudText>
                 <MudText Typo="Typo.body1">Balance: @_order.SettlementBalance?.ToMoneyString().ToHyphenIfNullOrEmpty()</MudText>
                 <MudText Typo="Typo.body1">Contract Type: @_order.ContractType?.ToHyphenIfNullOrEmpty()</MudText>
                 <MudText Typo="Typo.body1">
                     Created: @_order.CreatedTimestamp.ToDateTimeString() <br />
                     <MudAlert Severity="Severity.Info">@_order.CreatedTimestamp.Humanize()</MudAlert>
                 </MudText>
-                <MudText Typo="Typo.body1"><MudChip>@_order.PointOfSales?.ToHyphenIfNullOrEmpty().ToUpper() </MudChip> / <MudChip> @_order.Segment?.Name.ToHyphenIfNullOrEmpty().ToUpper()</MudChip></MudText>
+                <MudText Typo="Typo.body1"><MudChip T="string">@_order.PointOfSales?.ToHyphenIfNullOrEmpty().ToUpper() </MudChip> / <MudChip T="string"> @_order.Segment?.Name.ToHyphenIfNullOrEmpty().ToUpper()</MudChip></MudText>
             </MudItem>
 
             <MudItem xs="12"></MudItem>
@@ -94,7 +94,7 @@
             <MudItem xs="4">
                 @foreach (var item in _order.PropertyBag)
                 {
-                    <MudText Typo="Typo.body1"><MudChip>@item.Key => @item.Value</MudChip></MudText>
+                    <MudText Typo="Typo.body1"><MudChip T="string">@item.Key => @item.Value</MudChip></MudText>
                 }
             </MudItem>
 
@@ -127,15 +127,15 @@
                                     <MudText Typo="Typo.button">@orderItem.ProductVariationName</MudText>
                                     @if (orderItem.IsFailed)
                                     {
-                                        <MudText Typo="Typo.button" Color="Color.Error"><MudChip>Failed</MudChip></MudText>
+                                        <MudText Typo="Typo.button" Color="Color.Error"><MudChip T="string">Failed</MudChip></MudText>
                                     }
                                     @if (orderItem.IsDelayed)
                                     {
-                                        <MudText Typo="Typo.button" Color="Color.Warning"><MudChip>Delayed</MudChip></MudText>
+                                        <MudText Typo="Typo.button" Color="Color.Warning"><MudChip T="string">Delayed</MudChip></MudText>
                                     }
                                     <br />
-                                    <MudText Typo="Typo.button"><MudChip>@orderItem.SalesFareName (v: @orderItem.SalesFareVersion)</MudChip></MudText>
-                                    <MudText Typo="Typo.button"><MudChip>@orderItem.State</MudChip></MudText>
+                                    <MudText Typo="Typo.button"><MudChip T="string">@orderItem.SalesFareName (v: @orderItem.SalesFareVersion)</MudChip></MudText>
+                                    <MudText Typo="Typo.button"><MudChip T="string">@orderItem.State</MudChip></MudText>
                                     <br />
                                     @if (!string.IsNullOrEmpty(orderItem.BundleProductName))
                                     {
@@ -143,8 +143,8 @@
                                         <MudText Typo="Typo.body1">@orderItem.BundleProductVariationName</MudText>
                                         <br />
                                     }
-                                    <MudText Typo="Typo.button"><MudChip>Retail Price: @orderItem.RetailPrice?.ToMoneyString().ToHyphenIfNullOrEmpty()</MudChip></MudText>
-                                    <MudText Typo="Typo.button"><MudChip>Commission: @orderItem.DistributorCommission?.ToMoneyString().ToHyphenIfNullOrEmpty()</MudChip></MudText>
+                                    <MudText Typo="Typo.button"><MudChip T="string">Retail Price: @orderItem.RetailPrice?.ToMoneyString().ToHyphenIfNullOrEmpty()</MudChip></MudText>
+                                    <MudText Typo="Typo.button"><MudChip T="string">Commission: @orderItem.DistributorCommission?.ToMoneyString().ToHyphenIfNullOrEmpty()</MudChip></MudText>
 
                                     <h4>Traveler Groups</h4>
                                     @if (orderItem.TravelerGroups.Any())
@@ -155,15 +155,15 @@
                                             @if (tg.UnitType is not null)
                                             {
                                                 <MudText Typo="Typo.body1">Group @tg.UnitType.UnitTypeName</MudText>
-                                                <MudText Typo="Typo.button"><MudChip>@tg.UnitType.Status</MudChip></MudText>
-                                                <MudText Typo="Typo.button"><MudChip>@tg.UnitType.SalesPrice?.ToMoneyString().ToHyphenIfNullOrEmpty()</MudChip></MudText>
+                                                <MudText Typo="Typo.button"><MudChip T="string">@tg.UnitType.Status</MudChip></MudText>
+                                                <MudText Typo="Typo.button"><MudChip T="string">@tg.UnitType.SalesPrice?.ToMoneyString().ToHyphenIfNullOrEmpty()</MudChip></MudText>
                                             }
                                             @if (tg.Travelers.Any())
                                             {
                                                 @foreach (var t in tg.Travelers)
                                                 {
-                                                    <MudText Typo="Typo.body1">PaxRPH: @t.PaxRPH <MudChip>@t.Status</MudChip></MudText>
-                                                    <MudText Typo="Typo.body1">Ticket Type: @t.TicketTypeName <MudChip>@t.SalesPrice?.ToMoneyString().ToHyphenIfNullOrEmpty()</MudChip></MudText>
+                                                    <MudText Typo="Typo.body1">PaxRPH: @t.PaxRPH <MudChip T="string">@t.Status</MudChip></MudText>
+                                                    <MudText Typo="Typo.body1">Ticket Type: @t.TicketTypeName <MudChip T="string">@t.SalesPrice?.ToMoneyString().ToHyphenIfNullOrEmpty()</MudChip></MudText>
                                                 }
                                             }
                                             else
@@ -182,7 +182,7 @@
                                     {
                                         @foreach (var alloc in orderItem.Allocations)
                                         {
-                                            <MudText Typo="Typo.body1">Pax: @alloc.PaxRPH / <MudChip>@alloc.Status</MudChip> / Pile: @alloc.Pile.ToHyphenIfNullOrEmpty() / Unit: @alloc.Unit.ToHyphenIfNullOrEmpty() / Section: @alloc.Section.ToHyphenIfNullOrEmpty() / Spot: @alloc.Spot.ToHyphenIfNullOrEmpty()</MudText>
+                                            <MudText Typo="Typo.body1">Pax: @alloc.PaxRPH / <MudChip T="string">@alloc.Status</MudChip> / Pile: @alloc.Pile.ToHyphenIfNullOrEmpty() / Unit: @alloc.Unit.ToHyphenIfNullOrEmpty() / Section: @alloc.Section.ToHyphenIfNullOrEmpty() / Spot: @alloc.Spot.ToHyphenIfNullOrEmpty()</MudText>
                                         }
                                     }
                                     else
@@ -195,7 +195,7 @@
                                     {
                                         @foreach (var cf in orderItem.CustomFields)
                                         {
-                                            <MudText Typo="Typo.body1"><MudChip>@cf.Key => @cf.Value</MudChip></MudText>
+                                            <MudText Typo="Typo.body1"><MudChip T="string">@cf.Key => @cf.Value</MudChip></MudText>
                                         }
                                     }
                                     else
@@ -209,7 +209,7 @@
                                         @foreach (var attr in orderItem.Attributes)
                                         {
                                             <MudText Typo="Typo.body1">
-                                                <MudChip>@attr.Key => @attr.Value</MudChip>
+                                                <MudChip T="string">@attr.Key => @attr.Value</MudChip>
                                                 @if (attr.Key == AttributeKey.StartDateTime)
                                                 {
                                                     <span>Starts in @DateTimeOffset.Parse(attr.Value).Humanize()</span>
@@ -248,9 +248,9 @@
                                         @foreach (var dev in orderItem.Deviations)
                                         {
                                             <MudText Typo="Typo.body1">@dev.Name</MudText>
-                                            <MudText Typo="Typo.button"><MudChip>@dev.State</MudChip></MudText>
-                                            <MudText Typo="Typo.button"><MudChip>@dev.Type</MudChip></MudText>
-                                            <MudText Typo="Typo.button"><MudChip>@dev.PeriodType</MudChip></MudText>
+                                            <MudText Typo="Typo.button"><MudChip T="string">@dev.State</MudChip></MudText>
+                                            <MudText Typo="Typo.button"><MudChip T="string">@dev.Type</MudChip></MudText>
+                                            <MudText Typo="Typo.button"><MudChip T="string">@dev.PeriodType</MudChip></MudText>
                                             <MudText Typo="Typo.button">@dev.PeriodFrom.ToDateTimeString() - @dev.PeriodTo.ToDateTimeString()</MudText>
                                         }
                                     }
@@ -292,8 +292,8 @@
                         <RowTemplate>
                             <MudTd DataLabel="Type">@context.Type</MudTd>
                             <MudTd DataLabel="Receipt Text">@context.ReceiptText.ToHyphenIfNullOrEmpty()</MudTd>
-                            <MudTd DataLabel="State"><MudChip>@context.State</MudChip> </MudTd>
-                            <MudTd DataLabel="Amount"><MudChip>@context.Amount?.ToMoneyString().ToHyphenIfNullOrEmpty()</MudChip></MudTd>
+                            <MudTd DataLabel="State"><MudChip T="string">@context.State</MudChip> </MudTd>
+                            <MudTd DataLabel="Amount"><MudChip T="string">@context.Amount?.ToMoneyString().ToHyphenIfNullOrEmpty()</MudChip></MudTd>
                             <MudTd DataLabel="Payment">
                                 @if (context.Payment is null)
                                 {
@@ -301,7 +301,7 @@
                                 }
                                 else
                                 {
-                                    <MudTd DataLabel="State"><MudChip>@context.Payment.State</MudChip> </MudTd>
+                                    <MudTd DataLabel="State"><MudChip T="string">@context.Payment.State</MudChip> </MudTd>
                                 }
                             </MudTd>
                         </RowTemplate>
@@ -334,7 +334,7 @@
                         <RowTemplate>
                             <MudTd DataLabel="Created">@context.CreatedTimestamp.ToDateTimeString()</MudTd>
                             <MudTd DataLabel="Text">@context.Text.ToHyphenIfNullOrEmpty()</MudTd>
-                            <MudTd DataLabel="Is Private"><MudChip>@context.IsPrivate.ToYesNo()</MudChip> </MudTd>
+                            <MudTd DataLabel="Is Private"><MudChip T="string">@context.IsPrivate.ToYesNo()</MudChip> </MudTd>
                         </RowTemplate>
                     </MudTable>
                 }

@@ -1,0 +1,232 @@
+﻿@page "/mcp/server"
+@using FjordTours.App.DistributorApi.Components
+@using FjordTours.App.DistributorApi.Infrastructure.Extensions
+@using FjordTours.App.DistributorApi.Infrastructure.Services
+@using FjordTours.App.DistributorApi.Infrastructure.State
+@using FjordTours.DistributorApi.Auth.Config
+@using FjordTours.DistributorApi.Common.Constants
+@using FjordTours.DistributorApi.Common.Contracts
+@using ModelContextProtocol.Client
+@using System.Text.Json
+
+@inherits AppProtectedPage
+
+<h1>MCP Server - Chat</h1>
+
+@if (HasAccessToEndpointCategory(EndpointConstants.McpServer))
+{
+    if (string.IsNullOrEmpty(AppState.OllamaBaseAddress))
+    {
+        <MudAlert Severity="Severity.Warning">
+            Ai chat for demonstrating the MCP flavor of the FjordTours API is not available as no
+            <strong>OllamaBaseAddress</strong> has been configured on the login page.
+        </MudAlert>
+    }
+    else
+    {
+        <MudGrid>
+            <MudItem xs="12">
+                <MudText Typo="Typo.h6">Tools</MudText>
+
+                @if (_isLoadingTools)
+                {
+                    <MudProgressCircular Color="Color.Primary"
+                                         Size="Size.Large"
+                    Indeterminate="true" />
+                }
+                else
+                {
+                    <MudTable Items="@_tools"
+                              Hover="true"
+                              Breakpoint="Breakpoint.Sm"
+                              Loading="@_isLoadingTools"
+                              LoadingProgressColor="Color.Info">
+                        <HeaderContent>
+                            <MudTh>Name</MudTh>
+                            <MudTh>Description</MudTh>
+                            <MudTh>Annotations</MudTh>
+                            <MudTh>Json Schema</MudTh>
+                        </HeaderContent>
+                        <RowTemplate>
+                            <MudTd DataLabel="Name">@context.ProtocolTool.Name</MudTd>
+                            <MudTd DataLabel="Description">@context.ProtocolTool.Description</MudTd>
+                            <MudTd DataLabel="Additional Properties">
+                                @if (context.ProtocolTool.Annotations is not null)
+                                {
+                                    <span>Title: <b>@context.ProtocolTool.Annotations.Title.HyphenIfNullOrEmpty()</b></span><br />
+                                    <span>DestructiveHint: <b>@context.ProtocolTool.Annotations.DestructiveHint?.ToYesNo()</b></span>
+                                    <span>IdempotentHint: <b>@context.ProtocolTool.Annotations.IdempotentHint?.ToYesNo()</b></span>
+                                    <span>OpenWorldHint: <b>@context.ProtocolTool.Annotations.OpenWorldHint?.ToYesNo()</b></span>
+                                    <span>ReadOnlyHint: <b>@context.ProtocolTool.Annotations.ReadOnlyHint?.ToYesNo()</b></span>
+                                    <br />
+                                }
+                                else
+                                {
+                                    <MudAlert Severity="Severity.Info">There are no annotations.</MudAlert>
+                                }
+                            </MudTd>
+                            <MudTd DataLabel="Json Schema">
+                                <MudText Typo="Typo.body2" Class="mud-font-mono" Style="white-space: pre-wrap;">
+                                    @System.Text.Json.JsonSerializer.Serialize(context.ProtocolTool.InputSchema, new JsonSerializerOptions { WriteIndented = true })
+                                </MudText>
+                            </MudTd>
+                        </RowTemplate>
+                    </MudTable>
+                }
+            </MudItem>
+
+            <MudItem xs="12">
+                <MudText Typo="Typo.h6">Prompts</MudText>
+
+                @if (_isLoadingPrompts)
+                {
+                    <MudProgressCircular Color="Color.Primary"
+                                         Size="Size.Large"
+                                         Indeterminate="true" />
+                }
+                else
+                {
+                    <MudTable Items="@_prompts"
+                              Hover="true"
+                              Breakpoint="Breakpoint.Sm"
+                              Loading="@_isLoadingPrompts"
+                              LoadingProgressColor="Color.Info">
+                        <HeaderContent>
+                            <MudTh>Name</MudTh>
+                            <MudTh>Description</MudTh>
+                            <MudTh>Arguments</MudTh>
+                        </HeaderContent>
+                        <RowTemplate>
+                            <MudTd DataLabel="Name">@context.ProtocolPrompt.Name</MudTd>
+                            <MudTd DataLabel="Description">@context.ProtocolPrompt.Description</MudTd>
+                            <MudTd DataLabel="Arguments">
+                                @if (context.ProtocolPrompt.Arguments?.Any() ?? false)
+                                {
+                                    <ul>
+                                        @foreach (var arg in context.ProtocolPrompt.Arguments)
+                                        {
+                                            <li>@context.Name / required: @((arg.Required ?? false).ToYesNo()) / @context.Description.HyphenIfNullOrEmpty()</li>
+                                        }
+                                    </ul>
+                                }
+                                else
+                                {
+                                    <MudAlert Severity="Severity.Info">There are no arguments.</MudAlert>
+                                }
+                            </MudTd>
+                        </RowTemplate>
+                    </MudTable>
+                }
+            </MudItem>
+
+            <MudItem xs="12">
+                <MudText Typo="Typo.h6">Resources</MudText>
+
+                @if (_isLoadingResources)
+                {
+                    <MudProgressCircular Color="Color.Primary"
+                                         Size="Size.Large"
+                                         Indeterminate="true" />
+                }
+                else
+                {
+                    <MudTable Items="@_resources"
+                              Hover="true"
+                              Breakpoint="Breakpoint.Sm"
+                              Loading="@_isLoadingResources"
+                              LoadingProgressColor="Color.Info">
+                        <HeaderContent>
+                            <MudTh>Name</MudTh>
+                            <MudTh>Description</MudTh>
+                        </HeaderContent>
+                        <RowTemplate>
+                            <MudTd DataLabel="Name">@context.Name</MudTd>
+                            <MudTd DataLabel="Description">@context.Description</MudTd>
+                        </RowTemplate>
+                    </MudTable>
+                }
+            </MudItem>
+        </MudGrid>
+    }
+}
+else
+{
+    <MudAlert Severity="Severity.Warning">Sorry, distributor does not seem to have access to this functionality.</MudAlert>
+}
+
+@code {
+
+    [Inject]
+    FjordToursDistributorApiConfig ApiConfig { get; set; } = default!;
+
+    [Inject]
+    ILoggerFactory LoggerFactory { get; set; } = default!;
+
+    private bool _isLoadingTools = true;
+    private bool _isLoadingPrompts = true;
+    private bool _isLoadingResources = true;
+
+    private CancellationTokenSource _cts = new();
+    private bool _isDisposed = false;
+
+    private IMcpClient _mcpClient = default!;
+    private IList<McpClientTool> _tools = new List<McpClientTool>();
+    private IList<McpClientPrompt> _prompts = new List<McpClientPrompt>();
+    private IList<McpClientResource> _resources = new List<McpClientResource>();
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!string.IsNullOrEmpty(AppState.OllamaBaseAddress))
+        {
+            await InitializeClient();
+            await Task.WhenAll(
+                GetTools(),
+                GetPrompts(),
+                GetResources());
+        }
+    }
+
+    private async Task InitializeClient()
+    {
+        try
+        {
+            var mcpServerUri = new Uri("https://localhost:7224/api/v1/mcp");
+            _mcpClient = await McpClientFactory.CreateAsync(
+                new SseClientTransport(
+                    new SseClientTransportOptions
+                    {
+                        Endpoint = mcpServerUri
+                    }
+                ),
+                new McpClientOptions(),
+                LoggerFactory,
+                _cts.Token
+            );
+            await _mcpClient.PingAsync(_cts.Token);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex);
+        }
+    }
+
+    private async Task GetTools()
+    {
+        _tools = await _mcpClient.ListToolsAsync(null, _cts.Token);
+        _isLoadingTools = false;
+    }
+
+    private async Task GetPrompts()
+    {
+        _prompts = await _mcpClient.ListPromptsAsync(_cts.Token);
+        _isLoadingPrompts = false;
+    }
+
+    private async Task GetResources()
+    {
+        // Resources call seems not to be supported at the moment
+        //_resources = await _mcpClient.ListResourcesAsync(_cts.Token);
+        _isLoadingResources = false;
+    }
+
+}

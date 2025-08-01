@@ -8,6 +8,15 @@ namespace FjordTours.App.DistributorApi.Infrastructure.State
     public class AppState
     {
 
+        #region Parameters
+
+        public string? OllamaBaseAddress { get; set; } = null;
+
+        public string? Model { get; set; } = null;
+
+        #endregion
+
+
         #region Management
 
         internal DistributorProfileDto? DistributorProfile { get; set; } = null;

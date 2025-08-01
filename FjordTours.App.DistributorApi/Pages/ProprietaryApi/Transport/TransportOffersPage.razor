@@ -116,19 +116,19 @@
                             <MudGrid>
                                 <MudItem xs="12">
                                     <h3>@option.DepartureCode</h3> <br />
-                                    <MudChip>@option.MeansOfTransport</MudChip>
+                                    <MudChip T="string">@option.MeansOfTransport</MudChip>
                                     @if (option.IsAffectedByDeviation)
                                     {
-                                        <MudChip Color="Color.Warning">Affected By Deviation</MudChip>
+                                        <MudChip T="string" Color="Color.Warning">Affected By Deviation</MudChip>
                                     }
                                     @if (!string.IsNullOrEmpty(option.AlternativeMeansOfTransport))
                                     {
-                                        <MudChip Icon="@Icons.Material.Filled.CompareArrows"
+                                        <MudChip T="string" Icon="@Icons.Material.Filled.CompareArrows"
                                                  Color="Color.Warning">@option.AlternativeMeansOfTransport</MudChip>
                                     }
                                     @if (option.IsCancelled)
                                     {
-                                        <MudChip Color="Color.Error">Cancelled</MudChip>
+                                        <MudChip T="string" Color="Color.Error">Cancelled</MudChip>
                                     }
                                 </MudItem>
 
@@ -155,7 +155,7 @@
                                             @foreach (var info in option.LineInfos)
                                             {
                                                 <MudText Typo="Typo.button">@info.Title</MudText>
-                                                <MudChip>@info.Type</MudChip>
+                                                <MudChip T="string">@info.Type</MudChip>
                                                 <MudText Typo="Typo.caption">@info.ValidFrom.ToDateTimeString() - @info.ValidTo.ToDateTimeString()</MudText>
                                                 <MudText Typo="Typo.caption">@info.Body</MudText>
                                             }
@@ -179,7 +179,7 @@
                                         {
                                             var travelClassOffers = option.Offers.Where(o => o.TravelClassId == travelClass);
                                             <MudItem xs="12">
-                                                <MudText Typo="Typo.button"><MudChip>@GetTravelClassName(travelClass)</MudChip></MudText>
+                                                <MudText Typo="Typo.button"><MudChip T="string">@GetTravelClassName(travelClass)</MudChip></MudText>
                                                 @if (travelClassOffers.Any())
                                                 {
                                                     <MudPaper Elevation="3">
@@ -192,7 +192,7 @@
                                                                 </MudItem>
                                                                 <MudItem xs="6">
                                                                     <MudText>Retail Price</MudText>
-                                                                    <MudText Typo="Typo.button"><MudChip>@offer!.RetailPrice?.ToMoneyString()</MudChip></MudText>
+                                                                    <MudText Typo="Typo.button"><MudChip T="string">@offer!.RetailPrice?.ToMoneyString()</MudChip></MudText>
 
                                                                     <MudText>Commission</MudText>
                                                                     <MudText Typo="Typo.button">@offer!.DistributorCommission?.ToMoneyString()</MudText>
@@ -200,7 +200,7 @@
 
                                                                 <MudItem xs="6">
                                                                     <MudText Typo="Typo.button">
-                                                                        <MudChip Color="@(offer.Availability?.MinimumAvailable > 0 ? Color.Success : Color.Error)">
+                                                                        <MudChip T="string" Color="@(offer.Availability?.MinimumAvailable > 0 ? Color.Success : Color.Error)">
                                                                             @offer.Availability?.MinimumAvailable
                                                                         </MudChip>
                                                                     </MudText>
@@ -241,7 +241,7 @@
                                                                                                     <MudText Typo="Typo.caption">@GetTime(leg.ArrivalDateTime)</MudText>
                                                                                                 </MudItem>
                                                                                             </MudGrid>
-                                                                                            <MudText Typo="Typo.body2"><MudChip>@GetTravelClassName(leg.TravelClassId)</MudChip></MudText>
+                                                                                            <MudText Typo="Typo.body2"><MudChip T="string">@GetTravelClassName(leg.TravelClassId)</MudChip></MudText>
                                                                                         </MudCardContent>
                                                                                     </MudCard>
                                                                                 </MudTimelineItem>
@@ -359,7 +359,7 @@ else
         StateHasChanged();
     }
 
-    Task<IEnumerable<LocationDto>> SearchOrigin(string value)
+    Task<IEnumerable<LocationDto>> SearchOrigin(string value, CancellationToken cancellationToken)
     {
         // if text is null or empty, show complete list
         if (string.IsNullOrEmpty(value))
@@ -368,7 +368,7 @@ else
             value, StringComparison.InvariantCultureIgnoreCase)));
     }
 
-    Task<IEnumerable<LocationDto>> SearchDestination(string value)
+    Task<IEnumerable<LocationDto>> SearchDestination(string value, CancellationToken cancellationToken)
     {
         // if text is null or empty, show complete list
         if (string.IsNullOrEmpty(value))
@@ -377,7 +377,7 @@ else
             value, StringComparison.InvariantCultureIgnoreCase)));
     }
 
-    Task<IEnumerable<SegmentDto>> SearchSegment(string value)
+    Task<IEnumerable<SegmentDto>> SearchSegment(string value, CancellationToken cancellationToken)
     {
         // if text is null or empty, show complete list
         if (string.IsNullOrEmpty(value))
@@ -445,7 +445,9 @@ else
                 MeansOfTransport = c.MeansOfTransport,
                 AlternativeMeansOfTransport = c.AlternativeMeansOfTransport,
                 Legs = c.Legs,
-                TravelClasses = c.TravelClasses
+                TravelClasses = c.TravelClasses,
+                IsAvailableInFuture = c.IsAvailableInFuture,
+                IsTentative = c.IsTentative
             })
             .ToList();
         _isSearchingDepartureOptions = false;

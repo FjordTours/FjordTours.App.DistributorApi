@@ -91,7 +91,7 @@
 
                                     <MudText>Availability</MudText>
                                     <MudText Typo="Typo.button">
-                                        <MudChip Color="@(avail.UnitsAvailable > 0 ? Color.Success : Color.Error)">
+                                        <MudChip T="string" Color="@(avail.UnitsAvailable > 0 ? Color.Success : Color.Error)">
                                             @avail.UnitsAvailable
                                         </MudChip>
                                     </MudText>

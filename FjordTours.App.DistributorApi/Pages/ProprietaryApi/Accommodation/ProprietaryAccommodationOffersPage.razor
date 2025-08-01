@@ -84,7 +84,7 @@
                                     <MudText Typo="Typo.button">@offer.CheckInDate.ToDateString() - @offer.CheckOutDate.ToDateString()</MudText>
                                     <MudText>Availability</MudText>
                                     <MudText Typo="Typo.button">
-                                        <MudChip Color="@(offer.Availability?.MinimumAvailable > 0 ? Color.Success : Color.Error)">
+                                        <MudChip T="string" Color="@(offer.Availability?.MinimumAvailable > 0 ? Color.Success : Color.Error)">
                                             @offer.Availability?.MinimumAvailable
                                         </MudChip>
                                     </MudText>

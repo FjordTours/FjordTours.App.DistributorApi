@@ -56,7 +56,7 @@
         <MudText Typo="Typo.button">@_booking.SupplierReference.ToHyphenIfNullOrEmpty()</MudText>
 
         <MudText>Status</MudText>
-        <MudText Typo="Typo.button"><MudChip>@_booking.Status.ToString()</MudChip></MudText>
+        <MudText Typo="Typo.button"><MudChip T="string">@_booking.Status.ToString()</MudChip></MudText>
 
 
         <h3>Product</h3>
@@ -94,7 +94,7 @@
             foreach (var unitItem in _booking.UnitItems)
             {
                 <MudText>UUID: @unitItem.Uuid</MudText>
-                <MudText Typo="Typo.button">@unitItem.UnitId <MudChip>@unitItem.Status.ToString()</MudChip></MudText>
+                <MudText Typo="Typo.button">@unitItem.UnitId <MudChip T="string">@unitItem.Status.ToString()</MudChip></MudText>
             }
         }
         else
@@ -135,7 +135,7 @@
             {
                 foreach (var dm in _booking.DeliveryMethods)
                 {
-                    <MudText Typo="Typo.button"><MudChip>@dm.ToString()</MudChip></MudText>
+                    <MudText Typo="Typo.button"><MudChip T="string">@dm.ToString()</MudChip></MudText>
                 }
             }
             else

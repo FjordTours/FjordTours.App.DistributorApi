@@ -38,7 +38,7 @@ else
             {
                 @foreach (var payMethod in AppState.DistributorProfile.PaymentMethods.Order())
                 {
-                    <MudChip Color="Color.Success">@payMethod</MudChip>
+                    <MudChip T="string" Color="Color.Success">@payMethod</MudChip>
                 }
             }
         </MudItem>
@@ -53,7 +53,7 @@ else
             {
                 @foreach (var channel in AppState.DistributorProfile.Channels.Order())
                 {
-                    <MudChip Color="Color.Success">@channel</MudChip>
+                    <MudChip T="string" Color="Color.Success">@channel</MudChip>
                 }
             }
         </MudItem>

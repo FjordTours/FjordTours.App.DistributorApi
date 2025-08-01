@@ -1,5 +1,4 @@
-﻿
-@inherits ComponentBase
+﻿@inherits ComponentBase
 
 <h3>Auth Details for Distributor Api</h3>
 
@@ -16,8 +15,8 @@
                  @bind-IsValid="@success">
             <MudTextField T="string"
                           Label="Base Address"
-                          @bind-Value="@DistributorApiAppConfig.BaseAddress"
-                          ReadOnly="true" />
+                          ReadOnly="true"
+                          @bind-Value="@DistributorApiAppConfig.BaseAddress" />
             <MudTextField T="string"
                           Label="OCPM Subscription Key"
                           @bind-Value="@DistributorApiAppConfig.OcpApimSubscriptionKey"
@@ -33,6 +32,22 @@
                           @bind-Value="@DistributorApiAppConfig.DistributorApiClientSecret"
                           Required="true"
                           RequiredError="Client secret is required!" />
+            <MudDivider Class="my-4" />
+            <MudAlert Severity="Severity.Warning">
+                To use the MCP flavor of the Fjord Tours Distributor API, you need to provide the base address of Ollama,
+                for example http://localhost:11434.
+            </MudAlert>
+            <MudTextField T="string"
+                          Label="Ollama Base Address"
+                          @bind-Value="@AppState.OllamaBaseAddress"
+                          Required="false" />
+            <MudAlert Severity="Severity.Warning">
+                Please also provide the name of the model to use, for example llama3.2:latest.
+            </MudAlert>
+            <MudTextField T="string"
+                          Label="Model"
+                          @bind-Value="@AppState.Model"
+                          Required="false" />
         </MudForm>
     }
 </MudPaper>

@@ -44,7 +44,7 @@
                 <MudTd DataLabel="Time"><MudText Typo="Typo.button">@context.DepartureTime.ToTimeString()</MudText></MudTd>
                 <MudTd DataLabel="Product">@context.ProductName - @context.ProductVariationName</MudTd>
                 <MudTd DataLabel="Available">
-                    <MudChip Color="@(context.IsAvailable ? Color.Success : Color.Error)">
+                    <MudChip T="string" Color="@(context.IsAvailable? Color.Success: Color.Error)">
                         @context.MaxQuantityAvailable.ToString()
                     </MudChip>
                 </MudTd>

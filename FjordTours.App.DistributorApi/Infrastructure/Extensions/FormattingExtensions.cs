@@ -59,5 +59,22 @@ namespace FjordTours.App.DistributorApi.Infrastructure.Extensions
             this bool value) 
             => value ? "YES" : "NO" ;
 
+        public static string ToInitials(
+            this string name)
+        {
+            if (string.IsNullOrWhiteSpace(name))
+                return string.Empty;
+
+            var words = name
+            .Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+
+            if (words.Length == 1)
+            {
+                return words[0].Substring(0, Math.Min(2, words[0].Length)).ToUpper();
+            }
+
+            return (words[0][0].ToString() + words[1][0].ToString()).ToUpper();
+        }
+
     }
 }
