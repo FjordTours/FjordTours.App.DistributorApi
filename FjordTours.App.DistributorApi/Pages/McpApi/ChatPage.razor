@@ -1,0 +1,342 @@
+﻿@page "/mcp/chat"
+@using FjordTours.App.DistributorApi.Components
+@using FjordTours.App.DistributorApi.Infrastructure.Extensions
+@using FjordTours.App.DistributorApi.Infrastructure.Services
+@using FjordTours.App.DistributorApi.Infrastructure.State
+@using FjordTours.DistributorApi.Auth.Config
+@using FjordTours.DistributorApi.Auth.Contracts
+@using FjordTours.DistributorApi.Auth.Infrastructure
+@using FjordTours.DistributorApi.Common.Constants
+@using Humanizer
+@using Microsoft.Extensions.AI
+@using ModelContextProtocol.Client
+@using System.Text
+@using System.Net.Http.Headers
+
+@inherits AppProtectedPage
+
+<h1>MCP Server - Chat</h1>
+
+@if (HasAccessToEndpointCategory(EndpointConstants.McpServer))
+{
+    if (_isLoading)
+    {
+        <MudProgressCircular Color="Color.Primary"
+                             Size="Size.Large"
+                             Indeterminate="true" />
+    }
+    else if (string.IsNullOrEmpty(AppState.OllamaBaseAddress))
+    {
+        <MudAlert Severity="Severity.Warning">
+            Ai chat for demonstrating the MCP flavor of the FjordTours API is not available as no
+            <strong>OllamaBaseAddress</strong> has been configured on the login page.
+        </MudAlert>
+    }
+    else
+    {
+        <MudPaper Class="chat-container" 
+                  Style="height: 100vh; display: flex; flex-direction: column;">
+            <MudText Typo="Typo.button">Messages sent: @_messagesCounter</MudText>
+            <MudGrid Class="chat-messages" 
+                     Style="flex: 1; overflow-y: auto;">
+                <MudItem xs="12">
+                    @foreach (var msg in _messages)
+                    {
+                        var position = msg.ChatMessage.Role == ChatRole.User 
+                            ? ChatBubblePosition.Start 
+                            : ChatBubblePosition.End;
+                        var color = msg.ChatMessage.Role == ChatRole.User
+                            ? Color.Primary
+                            : Color.Secondary;
+                        <MudChat ChatPosition="@position" 
+                                 Color="color">
+                            <MudAvatar Color="color">
+                                @msg.ChatMessage.AuthorName?.ToInitials()
+                            </MudAvatar>
+                            <MudChatHeader Name="@($"{msg.ChatMessage.Role.ToString().ToUpper()} - {msg.ChatMessage.AuthorName}")" 
+                                           Time="@msg.Timestamp.Humanize()" />
+                            <MudChatBubble>
+                                @if (msg.ChatMessage.Contents.Any())
+                                {
+                                    @foreach (var content in msg.ChatMessage.Contents)
+                                    {
+                                        try
+                                        {
+                                            if (content is DataContent)
+                                            {
+                                                var dataContent = content as DataContent;
+                                                <div>Data content received with MIME Type @dataContent!.MediaType</div>
+                                            }
+                                            else if (content is ErrorContent)
+                                            {
+                                                var errorContent = content as ErrorContent;
+                                                <MudAlert Severity="Severity.Error">
+                                                    An error occured.
+                                                    @if (!string.IsNullOrEmpty(errorContent!.ErrorCode))
+                                                    {
+                                                        <div>Error code: @errorContent.ErrorCode</div>
+                                                    }
+                                                    <MudMarkdown Value="@errorContent!.Message" />
+                                                </MudAlert>
+                                            }
+                                            else if (content is FunctionCallContent)
+                                            {
+                                                var functionCallContent = content as FunctionCallContent;
+                                                var markdown = $"Called function `{@functionCallContent!.Name}` with call id: {@functionCallContent.CallId}";
+                                                <MudMarkdown Value="@markdown" />
+                                            }
+                                            else if (content is TextContent)
+                                            {
+                                                var textContent = content as TextContent;
+                                                <MudMarkdown Value="@textContent!.Text" />
+                                            }
+                                            else if (content is TextReasoningContent)
+                                            {
+                                                var textReasoningContent = content as TextReasoningContent;
+                                                <MudMarkdown Value="@textReasoningContent!.Text" />
+                                            }
+                                            else if (content is UriContent)
+                                            {
+                                                var uriContent = content as UriContent;
+                                                <MudLink Href="@uriContent!.Uri.ToString()">
+                                                    @uriContent.Uri.ToString()
+                                                </MudLink>
+                                            }
+                                            else if (content is UsageContent)
+                                            {
+                                                var usageContent = content as UsageContent;
+                                                <MudText Typo="Typo.subtitle2">
+                                                    Input tokens: @usageContent!.Details.InputTokenCount /
+                                                    Output tokens: @usageContent.Details.OutputTokenCount /
+                                                    Total tokens: @usageContent.Details.TotalTokenCount
+                                                </MudText>
+                                            }
+                                            else
+                                            {
+                                                <MudAlert Severity="Severity.Warning">
+                                                    Unknown content type. Raw representation: @content.RawRepresentation?.ToString().HyphenIfNullOrEmpty()
+                                                </MudAlert>
+                                            }
+                                        }
+                                        catch (Exception ex)
+                                        {
+                                            <div>Error: @ex.Message</div>
+                                        }
+                                    }
+                                }
+                                else
+                                {
+                                    <MudAlert Severity="Severity.Info">
+                                        Chat message without any content.
+                                    </MudAlert>
+                                }
+                            </MudChatBubble>
+                        </MudChat>
+                    }
+                    @if (_isWaitingForChatResponse)
+                    {
+                        <MudChat ChatPosition="ChatBubblePosition.Start">
+                            <MudAvatar>??</MudAvatar>
+                            <MudChatBubble>
+                                <MudProgressCircular Color="Color.Default"
+                                                     Indeterminate="true" />
+                            </MudChatBubble>
+                        </MudChat>
+                    }
+                </MudItem>
+
+                <MudItem xs="12"
+                         Class="chat-input"
+                         Style="padding: 1rem; border-top: 1px solid #ccc;">
+                    <MudTextField T="string"
+                                  Label="Ask me anything"
+                                  Variant="Variant.Outlined"
+                                  @bind-Value="_chatMessageToSend"
+                                  Lines="3"
+                                  Adornment="Adornment.End"
+                                  AdornmentIcon="@Icons.Material.Filled.Send"
+                                  OnAdornmentClick="@(() => SendMessage())" />
+                </MudItem>
+            </MudGrid>
+        </MudPaper>
+    }
+}
+else
+{
+    <MudAlert Severity="Severity.Warning">Sorry, distributor does not seem to have access to this functionality.</MudAlert>
+}
+
+@code {
+
+    [Inject]
+    ILoggerFactory LoggerFactory { get; set; } = default!;
+
+    [Inject]
+    IServiceProvider ServiceProvider { get; set; } = default!;
+
+    [Inject]
+    IAuthContract AuthClient { get; set; } = default!;
+
+    [Inject]
+    FjordToursDistributorApiConfig ApiConfig { get; set; } = default!;
+
+    private Queue<TimestampedChatMessage> _messages = new();
+    private int _messagesCounter = 0;
+
+    private bool _isLoading = true;
+    private bool _isWaitingForChatResponse = false;
+    private CancellationTokenSource _cts = new();
+    private IChatClient _chatClient = default!;
+    private IMcpClient _mcpClient = default!;
+    private IList<McpClientTool> _tools = new List<McpClientTool>();
+    private IList<McpClientPrompt> _prompts = new List<McpClientPrompt>();
+
+    private string _chatMessageToSend { get; set; } = string.Empty;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!string.IsNullOrEmpty(AppState.OllamaBaseAddress) ||
+            !string.IsNullOrEmpty(AppState.Model))
+        {
+            await InitializeMcpClient();
+            InitializeChatClient();
+            await Task.WhenAll(
+                GetTools(),
+                GetPrompts());
+            await InitializeChat();
+        }
+        _isLoading = false;
+    }
+
+    private void InitializeChatClient()
+    {
+        var httpClient = CreateHttpClientForOllamaWithHandlers();
+        var client = new OllamaSharp.OllamaApiClient(
+            httpClient,
+            AppState.Model!);
+        var chatBuilder = ChatClientBuilderChatClientExtensions.AsBuilder(client);
+        _chatClient = chatBuilder
+            .UseFunctionInvocation()
+            .Build();
+    }
+
+    private HttpClient CreateHttpClientForOllamaWithHandlers()
+    {
+        var httpClientHandler = new HttpClientHandler();
+        var httpClient = new HttpClient(httpClientHandler) {
+            BaseAddress = new Uri(AppState.OllamaBaseAddress!)
+        };
+        return httpClient;
+    }
+
+    private async Task InitializeMcpClient()
+    {
+        try
+        {
+            var headers = new Dictionary<string, string>();
+            var distributorApiToken = await AuthClient.GetTokenAsync(
+                ApiConfig.DistributorApiClientId!, 
+                ApiConfig.DistributorApiClientSecret!);
+            if (distributorApiToken != null && !string.IsNullOrEmpty(distributorApiToken.AccessToken))
+                headers.Add("Authorization", $"Bearer {distributorApiToken.AccessToken}");
+
+            var mcpServerUri = new Uri($"{ApiConfig.BaseAddress}/mcp/sse");
+            _mcpClient = await McpClientFactory.CreateAsync(
+                new SseClientTransport(
+                    new SseClientTransportOptions {
+                        Endpoint = mcpServerUri, 
+                        AdditionalHeaders = headers
+                    }),
+                new McpClientOptions(),
+                LoggerFactory,
+                _cts.Token);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex);
+        }
+    }
+
+    private async Task InitializeChat()
+    {
+        foreach (var prompt in _prompts)
+        {
+            try
+            {
+                var actualPrompt = await prompt.GetAsync();
+                foreach (var msg in actualPrompt.Messages)
+                {
+                    _messages.Enqueue(new TimestampedChatMessage(
+                        new ChatMessage(msg.Role.ToRole(), msg.Content.Text) {
+                            AuthorName = AppState.DistributorProfile!.Name    
+                        },
+                    DateTime.Now));
+                }
+            }
+            catch (Exception ex)
+            {
+                // what a pity - let's log the issue and continue anyways.
+                Console.WriteLine(ex.Message);
+            }
+        }
+    }
+
+    private async Task SendMessage()
+    {
+        if (string.IsNullOrEmpty(_chatMessageToSend))
+            return;
+
+        _isWaitingForChatResponse = true;
+        _messagesCounter++;
+        StateHasChanged();
+
+        _messages.Enqueue(new TimestampedChatMessage(
+            new ChatMessage(ChatRole.User, _chatMessageToSend) {
+                AuthorName = AppState.DistributorProfile!.Name
+            },
+            DateTime.Now));
+        _chatMessageToSend = string.Empty;
+        StateHasChanged();
+
+        try
+        {
+            var rp = await _chatClient.GetResponseAsync(
+                _messages.Select(m => m.ChatMessage),
+                new() { 
+                    Tools = [.. _tools]
+                });
+            Console.WriteLine($"Received {rp.Messages.Count} messages.");
+            rp.Messages.ToList().ForEach(m => _messages.Enqueue(
+                new TimestampedChatMessage(m, DateTime.Now)));
+        }
+        catch (Exception ex)
+        {
+            // what a pity again - let's log the issue and continue anyways.
+            var msg = ex.Message;
+            if (ex.InnerException is not null)
+            {
+                msg += " Inner: " + ex.InnerException.Message;
+            }
+            Console.WriteLine(ex.Message);
+        }
+
+        _isWaitingForChatResponse = false;
+        StateHasChanged();
+    }
+
+    private async Task GetTools()
+    {
+        _tools = await _mcpClient.ListToolsAsync(null, _cts.Token);
+    }
+
+    private async Task GetPrompts()
+    {
+        _prompts = await _mcpClient.ListPromptsAsync(_cts.Token);
+    }
+
+    public record TimestampedChatMessage(
+        ChatMessage ChatMessage,
+        DateTime Timestamp)
+    { }
+
+}

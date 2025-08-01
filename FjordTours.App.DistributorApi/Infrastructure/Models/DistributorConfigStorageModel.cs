@@ -9,5 +9,9 @@
 
         public required string ClientSecret { get; set; }
 
+        public string? OllamaBaseAddress { get; set; }
+
+        public string? Model { get; set; }
+
     }
 }

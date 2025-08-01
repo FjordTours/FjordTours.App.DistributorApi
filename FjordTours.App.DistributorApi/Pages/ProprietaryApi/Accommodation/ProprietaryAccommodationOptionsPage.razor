@@ -27,37 +27,37 @@
             </MudItem>
             <MudItem xs="4">
                 <MudAutocomplete T="LocationDto"
-                Label="Location"
-                @bind-Value="_selectedLocation"
-                SearchFunc="@SearchLocation"
-                ToStringFunc="@(e => e==null ? null : $"{e.Name}")" />
+                                 Label="Location"
+                                 @bind-Value="_selectedLocation"
+                                 SearchFunc="@SearchLocation"
+                                 ToStringFunc="@(e => e==null ? null : $"{e.Name}")" />
             </MudItem>
             <MudItem xs="4">
                 <MudDatePicker @ref="_formDatePicker"
-                @bind-Date="_checkInDate"
-                Class="ma-2"
-                Label="Date"
-                Editable="true"
-                Margin="Margin.Dense"
-                Mask="@(new DateMask("dd.MM.yyyy"))"
-                DateFormat="dd.MM.yyyy"
-                HelperText="DD.MM.YYYY"
-                HelperTextOnFocus=true
-                Validation="@ValidateDate" />
+                               @bind-Date="_checkInDate"
+                               Class="ma-2"
+                               Label="Date"
+                               Editable="true"
+                               Margin="Margin.Dense"
+                               Mask="@(new DateMask("dd.MM.yyyy"))"
+                               DateFormat="dd.MM.yyyy"
+                               HelperText="DD.MM.YYYY"
+                               HelperTextOnFocus=true
+                               Validation="@ValidateDate" />
             </MudItem>
             <MudItem xs="4">
                 <MudAutocomplete T="SegmentDto"
-                Label="Segment"
-                @bind-Value="_selectedSegment"
-                SearchFunc="@SearchSegment"
-                ToStringFunc="@(e => e==null ? null : $"{e.Name}")" />
+                                 Label="Segment"
+                                 @bind-Value="_selectedSegment"
+                                 SearchFunc="@SearchSegment"
+                                 ToStringFunc="@(e => e==null ? null : $"{e.Name}")" />
             </MudItem>
             <MudItem xs="12">
                 <MudButton Variant="Variant.Filled"
-                Color="Color.Primary"
-                Disabled="@_isSearching"
-                DisableElevation="true"
-                OnClick="@(() => Search())">
+                           Color="Color.Primary"
+                           Disabled="@_isSearching"
+                           DisableElevation="true"
+                           OnClick="@(() => Search())">
                     Search
                 </MudButton>
             </MudItem>
@@ -106,7 +106,7 @@
                                         @foreach (var o in tg.Options)
                                         {
                                             <li>
-                                                <MudChip>@o.UnitTypeName</MudChip> / <MudChip>@o.RatePlanName</MudChip>
+                                                <MudChip T="string">@o.UnitTypeName</MudChip> / <MudChip T="string">@o.RatePlanName</MudChip>
                                                 <br />
                                                 <MudLink Href="@($"/proprietary/accommodation/offers/{context.ProductId}/{_propertyOptions.CheckInDate.ToUrlDateString()}/{o.OptionId}")">Get Offers</MudLink>
                                                 </li>
@@ -163,7 +163,7 @@ else
         StateHasChanged();
     }
 
-    Task<IEnumerable<LocationDto>> SearchLocation(string value)
+    Task<IEnumerable<LocationDto>> SearchLocation(string value, CancellationToken cancellationToken)
     {
         if (_locations is null) return Task.FromResult(Enumerable.Empty<LocationDto>());
         // if text is null or empty, show complete list
@@ -173,7 +173,7 @@ else
             value, StringComparison.InvariantCultureIgnoreCase)));
     }
 
-    Task<IEnumerable<SegmentDto>> SearchSegment(string value)
+    Task<IEnumerable<SegmentDto>> SearchSegment(string value, CancellationToken cancellationToken)
     {
         // if text is null or empty, show complete list
         if (string.IsNullOrEmpty(value))

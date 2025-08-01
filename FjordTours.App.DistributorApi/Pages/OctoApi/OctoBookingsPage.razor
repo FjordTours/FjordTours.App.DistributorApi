@@ -44,7 +44,7 @@
                         <MudTd DataLabel="Id">@context.Id</MudTd>
                         <MudTd DataLabel="Reseller Reference">@context.ResellerReference.ToHyphenIfNullOrEmpty()</MudTd>
                         <MudTd DataLabel="Supplier Reference">@context.SupplierReference.ToHyphenIfNullOrEmpty()</MudTd>
-                        <MudTd DataLabel="Probable State"><MudChip>@context.Status</MudChip> </MudTd>
+                        <MudTd DataLabel="Probable State"><MudChip T="string">@context.Status</MudChip> </MudTd>
                         <MudTd DataLabel="Details"><MudLink Href="@($"/octo/booking/{context.Id}")">Details</MudLink></MudTd>
                     </RowTemplate>
                 </MudTable>

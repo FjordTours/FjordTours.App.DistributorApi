@@ -60,7 +60,7 @@
                     <RowTemplate>
                         <MudTd DataLabel="Date"><MudText Typo="Typo.button">@context.Date.ToDateString()</MudText></MudTd>
                         <MudTd DataLabel="Available">
-                            <MudChip Color="@(context.UnitsAvailable > 0 ? Color.Success : Color.Error)">
+                            <MudChip T="string" Color="@(context.UnitsAvailable > 0 ? Color.Success : Color.Error)">
                                 @context.UnitsAvailable
                             </MudChip>
                         </MudTd>
@@ -143,7 +143,7 @@ else
         StateHasChanged();
     }
 
-    private Task<IEnumerable<SegmentDto>> SearchForSegment(string word)
+    private Task<IEnumerable<SegmentDto>> SearchForSegment(string word, CancellationToken cancellationToken)
         {
             return Task.FromResult(AppState.Segments!.ToList().FuzzySearch(x => x.Name, word));
         }

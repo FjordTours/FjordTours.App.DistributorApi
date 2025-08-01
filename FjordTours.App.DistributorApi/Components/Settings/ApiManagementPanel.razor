@@ -49,7 +49,7 @@ else
                 var color = category.IsEnabled
                     ? Color.Success
                     : Color.Error;
-                <MudChip Color="color">@category.CategoryKey</MudChip>
+                <MudChip T="string" Color="color">@category.CategoryKey</MudChip>
             }
         </MudItem>
 

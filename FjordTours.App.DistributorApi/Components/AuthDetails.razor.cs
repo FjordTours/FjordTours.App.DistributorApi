@@ -44,6 +44,8 @@ namespace FjordTours.App.DistributorApi.Components
                 DistributorApiAppConfig.OcpApimSubscriptionKey = storedConfig.SubscriptionKey;
                 DistributorApiAppConfig.DistributorApiClientId = storedConfig.ClientId;
                 DistributorApiAppConfig.DistributorApiClientSecret = storedConfig.ClientSecret;
+                AppState.OllamaBaseAddress = storedConfig.OllamaBaseAddress;
+                AppState.Model = storedConfig.Model;
             }
         }
 
@@ -64,7 +66,9 @@ namespace FjordTours.App.DistributorApi.Components
                         new DistributorConfigStorageModel() { 
                             SubscriptionKey = DistributorApiAppConfig.OcpApimSubscriptionKey!,
                             ClientId = DistributorApiAppConfig.DistributorApiClientId!,
-                            ClientSecret = DistributorApiAppConfig.DistributorApiClientSecret!
+                            ClientSecret = DistributorApiAppConfig.DistributorApiClientSecret!,
+                            OllamaBaseAddress = AppState.OllamaBaseAddress,
+                            Model = AppState.Model
                         });
                     // Bootstrapping
                     AppState.DistributorProfile = distributorProfile.Value;

@@ -48,7 +48,7 @@
                         </MudTd>
                         <MudTd DataLabel="Reference">@context.Reference</MudTd>
                         <MudTd DataLabel="Distributor">@context.Distributor?.Name.ToHyphenIfNullOrEmpty() / @context.PointOfSales.ToHyphenIfNullOrEmpty().ToUpper() / @context.Segment?.Name.ToHyphenIfNullOrEmpty().ToUpper()</MudTd>
-                        <MudTd DataLabel="State"><MudChip>@context.OrderState</MudChip> / <MudChip>@context.PaymentState</MudChip></MudTd>
+                        <MudTd DataLabel="State"><MudChip T="string">@context.OrderState</MudChip> / <MudChip T="string">@context.PaymentState</MudChip></MudTd>
                         <MudTd DataLabel="Data">
                             Order Name: @context.OrderName.ToHyphenIfNullOrEmpty()<br />
                             Booking Ref: @context.DistributorBookingReference.ToHyphenIfNullOrEmpty()

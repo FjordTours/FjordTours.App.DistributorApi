@@ -76,9 +76,16 @@
                             <MudText>Product Id</MudText>
                             <MudText Typo="Typo.button">@product.Id.ToString()</MudText>
 
+                            @if (product is ActivityProductDto)
+                            {
+                                var activityProduct = (ActivityProductDto)product;
+                                Console.WriteLine($"Activity {activityProduct.InternalName} has {activityProduct.Variations.Count()} variations.");
+                            }
+
                             @if (product is BundleProductDto)
                             {
                                 var bundleProduct = (BundleProductDto)product;
+                                Console.WriteLine($"Bundle {bundleProduct.InternalName} has {bundleProduct.Variations.Count()} variations.");
                                 <MudExpansionPanels>
                                     @foreach (var variation in bundleProduct.Variations)
                                     {

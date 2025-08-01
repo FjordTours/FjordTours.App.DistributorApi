@@ -14,6 +14,7 @@ using FjordTours.DistributorApi.Proprietary;
 using FjordTours.DistributorApi.Proprietary.Contracts;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
+using MudBlazor;
 using MudBlazor.Services;
 
 namespace FjordTours.App.DistributorApi
@@ -33,8 +34,11 @@ namespace FjordTours.App.DistributorApi
 
             // BLAZOR
             builder.Services.AddSingleton<AppState>();
-            builder.Services.AddMudServices();
+            builder.Services.AddMudServices(options => {
+                options.PopoverOptions.CheckForPopoverProvider = false;
+            });
             builder.Services.AddBlazoredLocalStorage();
+            builder.Services.AddMudMarkdownServices();
 
             // AUTH
             var apiConfig = new FjordToursDistributorApiConfig() { 
