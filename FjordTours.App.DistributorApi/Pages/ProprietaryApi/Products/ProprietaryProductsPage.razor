@@ -29,6 +29,7 @@
                     ProductType.Activity => Color.Primary,
                     ProductType.Composite => Color.Info,
                     ProductType.Transport => Color.Warning,
+                    ProductType.ShopItem => Color.Tertiary,
                     _ => Color.Secondary
                 };
                 var abbr = product.ProductType switch {
@@ -36,6 +37,7 @@
                     ProductType.Activity => "A",
                     ProductType.Composite => "B",
                     ProductType.Transport => "T",
+					ProductType.ShopItem => "S",
                     _ => "?"
                 };
                 var proceedLink = product.ProductType switch {
@@ -43,6 +45,7 @@
                     ProductType.Activity => $"/proprietary/activity/calendar/{product.Id}",
                     ProductType.Composite => $"/proprietary/bundle/calendar/{product.Id}",
                     ProductType.Transport => $"/proprietary/transport/options/{product.Id}",
+                    ProductType.ShopItem => $"#",
                     _ => "#"
                 };
                 var linkName = product.ProductType switch {
@@ -50,8 +53,14 @@
                     ProductType.Activity => "Availability Calendar",
                     ProductType.Composite => "Bundle Calendar",
                     ProductType.Transport => "Transport Options",
+					ProductType.ShopItem => "Shop Item Offers",
                     _ => "N/A"
                 };
+                if (product is LuggageTransferProductDto)
+                {
+                    proceedLink = $"/proprietary/luggage-transfer/offers/{product.Id}";
+                    linkName = "Luggage Transfer Offers";
+                }
                 <MudItem xs="3">
                     <MudCard style="min-height: 100px;">
                         <MudCardHeader>
@@ -69,9 +78,6 @@
 
                             <MudText>Cutoff in Minutes</MudText>
                             <MudText Typo="Typo.button">@product.CutoffTimeInMinutes.ToString()</MudText>
-
-                            <MudText>Min / Max Pax</MudText>
-                            <MudText Typo="Typo.button">@product.MinimumPax.ToString() / @product.MaximumPax.ToString()</MudText>
 
                             <MudText>Product Id</MudText>
                             <MudText Typo="Typo.button">@product.Id.ToString()</MudText>

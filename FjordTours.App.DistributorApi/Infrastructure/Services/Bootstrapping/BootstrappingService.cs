@@ -88,6 +88,17 @@ namespace FjordTours.App.DistributorApi.Infrastructure.Services.Bootstrapping
                     // just continue
                 }
             });
+            var getLuggageTransferProductsTask = Task.Run(async () => {
+                try
+                {
+                    var result = await _apiClient.GetLuggageTransferProductsAsync();
+                    _appState.LuggageTransferProducts = result?.Value;
+                }
+                catch (Exception)
+                {
+                    // just continue
+                }
+            });
             var getTransportProductsTask = Task.Run(async () => {
                 try
                 {
@@ -116,6 +127,7 @@ namespace FjordTours.App.DistributorApi.Infrastructure.Services.Bootstrapping
                 getAccommodationProductsTask,
                 getActivityProductsTask,
                 getBundleProductsTask,
+                getLuggageTransferProductsTask,
                 getTransportProductsTask);
         }
 
