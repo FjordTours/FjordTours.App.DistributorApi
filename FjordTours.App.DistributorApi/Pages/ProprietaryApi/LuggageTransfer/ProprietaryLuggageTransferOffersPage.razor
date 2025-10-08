@@ -1,0 +1,391 @@
+﻿@page "/proprietary/luggage-transfer/offers/{ProductId:guid}"
+@using FjordTours.App.DistributorApi.Components
+@using FjordTours.App.DistributorApi.Infrastructure.Constants
+@using FjordTours.App.DistributorApi.Infrastructure.Extensions
+@using FjordTours.App.DistributorApi.Infrastructure.State
+@using FjordTours.DistributorApi.Common.Dtos.DistributorApi.Transaction.LuggageTransfer
+@using FjordTours.DistributorApi.Common.Product
+@using FjordTours.DistributorApi.Common.Transaction.AcceptOffer
+@using FjordTours.DistributorApi.Common.Transaction.LuggageTransfer
+@using FjordTours.DistributorApi.Proprietary.Contracts
+@using FjordTours.DistributorApi.Common.Constants
+@using FjordTours.DistributorApi.Common.MasterData
+@inherits AppProtectedPage
+
+<h1>Proprietary Api - Luggage Transfer - Offers</h1>
+
+@if (HasAccessToEndpointCategory(EndpointConstants.AvailabilityLuggageTransfer))
+{
+    if (_isLoading)
+    {
+        <MudProgressCircular Color="Color.Primary"
+                             Size="Size.Large"
+                             Indeterminate="true" />
+    }
+    else if (_product is null)
+    {
+        <MudAlert Severity="Severity.Info">
+            Luggage transfer product not found.
+        </MudAlert>
+    }
+    else if (_collectionPointsOfProduct is null)
+    {
+        <MudAlert Severity="Severity.Info" >
+            No luggage transfer collectin points to show.
+        </MudAlert>
+    }
+    else
+    {
+        <MudGrid>
+            <MudItem xs="12">
+                <h2>Product: @_product.InternalName</h2>
+                @foreach (var contentItem in _product.ContentBag)
+                {
+                    var content = contentItem.Value.First(c => c.LanguageCode == "en");
+                    <p><b>@contentItem.Key</b>: @((MarkupString)content.Content)</p>
+                    <br />
+                }
+            </MudItem>
+            <MudItem xs="3">
+                <MudAutocomplete T="LocationDto"
+                                 Label="Origin"
+                                 Required="true"
+                                 @bind-Value="_selectedOriginLocation"
+                                 SearchFunc="@SearchOriginLocation"
+                                 ToStringFunc="@(e => e==null ? null : $"{e.Name}")" />
+            </MudItem>
+            <MudItem xs="3">
+                @if (_selectedOriginLocation is not null)
+                {
+                    <MudAutocomplete T="CollectionPointDto"
+                                     Label="Origin Collection Point"
+                                     Required="true"
+                                     @bind-Value="_selectedOriginCollectionPoint"
+                                     SearchFunc="@SearchOriginCollectionPoint"
+                                     ToStringFunc="@(e => e==null ? null : $"{e.Name}")" />
+                }
+            </MudItem>
+            <MudItem xs="3">
+                @if (_selectedOriginCollectionPoint is not null)
+                {
+                    <MudAutocomplete T="LocationDto"
+                                     Label="Origin"
+                                     Required="true"
+                                     @bind-Value="_selectedDestinationLocation"
+                                     SearchFunc="@SearchDestinationLocation"
+                                     ToStringFunc="@(e => e==null ? null : $"{e.Name}")" />
+                }
+            </MudItem>
+            <MudItem xs="3">
+                @if (_selectedDestinationLocation is not null)
+                {
+                    <MudAutocomplete T="CollectionPointDto"
+                                     Label="Destination Collection Point"
+                                     Required="true"
+                                     @bind-Value="_selectedDestinationCollectionPoint"
+                                     SearchFunc="@SearchDestinationCollectionPoint"
+                                     ToStringFunc="@(e => e==null ? null : $"{e.Name}")" />
+                }
+            </MudItem>
+            <MudItem xs="3">
+                <MudNumericField @bind-Value="_collis" 
+                                 Label="Standard" 
+                                 Required="true"
+                                 Variant="Variant.Text" 
+                                 Min="1" 
+                                 Max="10" />
+            </MudItem>
+            <MudItem xs="3">
+                <MudDatePicker @ref="_formDatePicker"
+                               @bind-Date="_pickupDate"
+                               Class="ma-2"
+                               Label="Date"
+                               Required="true"
+                               Editable="true"
+                               Margin="Margin.Dense"
+                               Mask="@(new DateMask("dd.MM.yyyy"))"
+                               DateFormat="dd.MM.yyyy"
+                               HelperText="DD.MM.YYYY"
+                               HelperTextOnFocus=true
+                               Validation="@ValidateDate" />
+            </MudItem>
+            <MudItem xs="3">
+                <MudAutocomplete T="SegmentDto"
+                                 Label="Segment"
+                                 @bind-Value="_selectedSegment"
+                                 SearchFunc="@SearchSegment"
+                                 ToStringFunc="@(e => e==null ? null : $"{e.Name}")" />
+            </MudItem>
+            <MudItem xs="3"></MudItem>
+            <MudItem xs="12">
+                <MudButton Variant="Variant.Filled"
+                           Color="Color.Primary"
+                           Disabled="!CanSearch() || _isSearchingOffers"
+                           DisableElevation="true"
+                           OnClick="@(() => Search())">
+                    Search
+                </MudButton>
+            </MudItem>
+
+            <MudItem xs="12">
+            </MudItem>
+            <MudItem xs="12">
+                <MudDivider />
+            </MudItem>
+            <MudItem xs="12">
+            </MudItem>
+
+            <MudItem xs="12">
+                <h2>Results</h2>
+            </MudItem>
+            @if (_isSearchingOffers)
+            {
+                <MudItem xs="12">
+                    <MudProgressCircular Color="Color.Primary"
+                                         Size="Size.Large"
+                                         Indeterminate="true" />
+                </MudItem>
+            }
+            else if (_offers is null)
+            {
+                <MudItem xs="12">
+                    <MudAlert Severity="Severity.Info">
+                        No offers found.
+                    </MudAlert>
+                </MudItem>
+            }
+            else
+            {
+                @foreach (var offer in _offers.Offers)
+                {
+                    <MudItem xs="3">
+                        <MudCard style="min-height: 100px;">
+                            <MudCardHeader>
+                                <CardHeaderAvatar>
+                                    <MudAvatar Color="Color.Primary">A</MudAvatar>
+                                </CardHeaderAvatar>
+                                <CardHeaderContent>
+                                    <MudText Typo="Typo.h6">@_product?.InternalName.ToHyphenIfNullOrEmpty()</MudText>
+                                    <MudText Typo="Typo.button">@_product?.ProductType.ToString().ToHyphenIfNullOrEmpty()</MudText>
+                                </CardHeaderContent>
+                            </MudCardHeader>
+                            <MudCardContent>
+                                <MudText>Sales Fare</MudText>
+                                <MudText Typo="Typo.button">@offer.SalesFare?.Code (v: @offer.SalesFare?.SalesFareVersion)</MudText>
+
+                                <MudText>Retail Price</MudText>
+                                <MudText Typo="Typo.button">@offer.RetailPrice?.ToMoneyString()</MudText>
+
+                                <MudText>Distributor Commission</MudText>
+                                <MudText Typo="Typo.button">@offer.DistributorCommission?.ToMoneyString()</MudText>
+                            </MudCardContent>
+                            @if (HasAccessToEndpointCategory(EndpointConstants.BookingFlow))
+                            {
+                                <MudCardActions>
+                                    <MudButton Variant="Variant.Filled"
+                                               Color="Color.Primary"
+                                               OnClick="@(() => Accept(offer))">
+                                        Accept
+                                    </MudButton>
+                                </MudCardActions>
+                            }
+                        </MudCard>
+                    </MudItem>
+                }
+            }
+        </MudGrid>
+    }
+}
+else
+{
+    <MudAlert Severity="Severity.Warning"> Sorry, distributor does not seem to have access to this functionality.</MudAlert >
+}
+
+@code {
+
+    [Inject]
+    AppState AppSate { get; set; } = default!;
+
+    [Inject]
+    IApiContract ApiClient { get; set; } = default!;
+
+    [Inject]
+    NavigationManager NavigationManager { get; set; } = default!;
+
+    [Parameter]
+    public Guid ProductId { get; set; }
+
+    bool _isLoading = false;
+    bool _isSearchingOffers = false;
+    LuggageTransferProductDto? _product = null;
+    IEnumerable<LocationDto> _locations = Enumerable.Empty<LocationDto>();
+    LuggageTransferCollectionPointDto? _collectionPointsOfProduct = null;
+    LocationDto? _selectedOriginLocation = null;
+    CollectionPointDto? _selectedOriginCollectionPoint = null;
+    LocationDto? _selectedDestinationLocation = null;
+    CollectionPointDto? _selectedDestinationCollectionPoint = null;
+    MudDatePicker _formDatePicker { get; set; } = default!;
+    DateTime? _pickupDate = DateTime.Now.AddMonths(2);
+    int _collis = 1;
+    SegmentDto? _selectedSegment = null;
+    LuggageTransferOffersResponse? _offers = null;
+
+    string _distributorBookingReference = new string(Faker.Lorem.Letters(8).ToArray());
+    string _orderName = Faker.Lorem.Word();
+    string _firstName = Faker.Name.FirstName();
+    string _lastName = Faker.Name.LastName();
+    string _email = Faker.User.Email();
+    string _phone = $"+47{Faker.Number.RandomNumber(111111111, 999999999)}";
+
+    protected override async Task OnParametersSetAsync()
+    {
+        _isLoading = true;
+
+        _product = AppState.LuggageTransferProducts?.FirstOrDefault(p =>
+            p.Id == ProductId);
+        var collectionPointsResult = await ApiClient.GetLuggageTransferCollectionPointsAsync();
+        if (collectionPointsResult?.Value is null)
+        {
+            _isLoading = false;
+            return;
+        }
+        _collectionPointsOfProduct = collectionPointsResult.Value.First(r => r.ProductId == ProductId);
+        var locationIds = _collectionPointsOfProduct?.Locations.Select(l => l.LocationId).ToHashSet();
+        _locations = AppState.Locations?.Where(l => locationIds!.Any(lid => lid == l.Id)).ToList() ?? new List<LocationDto>();
+
+        _isLoading = false;
+        StateHasChanged();
+    }
+
+    async Task Search()
+    {
+        _isSearchingOffers = true;
+        StateHasChanged();
+
+        var offers = await ApiClient.GetLuggageTransferOffersAsync(
+            new LuggageTransferOffersRequest() {
+                ProductId = _product!.Id,
+                OriginLocationId = _selectedOriginLocation!.Id,
+                OriginCollectionPointId = _selectedOriginCollectionPoint!.Id,
+                DestinationLocationId = _selectedDestinationLocation!.Id,
+                DestinationCollectionPointId = _selectedDestinationCollectionPoint!.Id,
+                SegmentId = _selectedSegment!.Id, 
+                Colli = _collis,
+                PickupDate = DateOnly.FromDateTime(_pickupDate!.Value)
+            });
+        if (offers?.Value is null ||
+            !offers.Value.Offers.Any())
+        {
+            _offers = null;
+            _isSearchingOffers = false;
+            StateHasChanged();
+            return;
+        }
+
+        _offers = offers.Value;
+        _isSearchingOffers = false;
+        StateHasChanged();
+    }
+
+    async Task Accept(
+        LuggageTransferOfferDto offer)
+    {
+        if (_offers is null ||
+            offer.OfferId is null)
+            return;
+        var holdResult = await ApiClient.AcceptOfferAsync(
+            new AcceptOfferRequest() {
+                CorrelationId = Guid.NewGuid(),
+                OfferContainerId = _offers.OfferContainerId,
+                OfferId = offer.OfferId.Value,
+                OrderName = _orderName,
+                DistributorBookingReference = _distributorBookingReference,
+                AdministrativeContact = new AdministrativeContactDto() {
+                    FirstName = _firstName,
+                    LastName = _lastName,
+                    Email = _email,
+                    MobilePhone = _phone,
+                    CountryId = AppConstants.NorwayCountryId
+                },
+                PropertyBag = new List<KeyValuePair<string, string>>()
+            });
+        NavigationManager.NavigateTo($"/proprietary/order/{_offers.OfferContainerId}");
+    }
+
+    Task<IEnumerable<LocationDto>> SearchOriginLocation(
+        string value, CancellationToken token)
+    {
+        // if text is null or empty, show complete list
+        if (string.IsNullOrEmpty(value))
+            return Task.FromResult(_locations);
+        return Task.FromResult(_locations.Where(x => 
+            x.Name.Contains(value, StringComparison.InvariantCultureIgnoreCase)));
+    }
+    
+    Task<IEnumerable<CollectionPointDto>> SearchOriginCollectionPoint(
+        string value, CancellationToken token)
+    {
+        var collectionPointsOfLocation = _collectionPointsOfProduct!.Locations.First(l => 
+            l.LocationId == _selectedOriginLocation!.Id);
+        // if text is null or empty, show complete list
+        if (string.IsNullOrEmpty(value))
+            return Task.FromResult(collectionPointsOfLocation.CollectionPoints.AsEnumerable());
+        return Task.FromResult(collectionPointsOfLocation.CollectionPoints.Where(x => 
+            x.Name.Contains(value, StringComparison.InvariantCultureIgnoreCase)));
+    }
+
+    Task<IEnumerable<LocationDto>> SearchDestinationLocation(
+        string value, CancellationToken token)
+    {
+        // if text is null or empty, show complete list
+        if (string.IsNullOrEmpty(value))
+            return Task.FromResult(_locations.Where(l => l.Id != _selectedOriginLocation!.Id));
+        return Task.FromResult(_locations.Where(x => 
+            x.Name.Contains(value, StringComparison.InvariantCultureIgnoreCase)));
+    }
+
+    Task<IEnumerable<CollectionPointDto>> SearchDestinationCollectionPoint(
+        string value, CancellationToken token)
+    {
+        var collectionPointsOfLocation = _collectionPointsOfProduct!.Locations.First(l =>
+            l.LocationId == _selectedDestinationLocation!.Id);
+        // if text is null or empty, show complete list
+        if (string.IsNullOrEmpty(value))
+            return Task.FromResult(collectionPointsOfLocation.CollectionPoints.AsEnumerable());
+        return Task.FromResult(collectionPointsOfLocation.CollectionPoints.Where(x => x.Name.Contains(
+            value, StringComparison.InvariantCultureIgnoreCase)));
+    }
+
+    Task<IEnumerable<SegmentDto>> SearchSegment(string value, CancellationToken cancellationToken)
+    {
+        // if text is null or empty, show complete list
+        if (string.IsNullOrEmpty(value))
+            return Task.FromResult(AppState.Segments!.AsEnumerable());
+        return Task.FromResult(AppState.Segments!.Where(x => x.Name.Contains(
+            value, StringComparison.InvariantCultureIgnoreCase)));
+    }
+
+    private Func<DateTime?, string> ValidateDate = (date) =>
+    {
+        if (date == null)
+        {
+            return "Required";
+        }
+
+        if (DateTime.Now.Date > date)
+        {
+            return "Date can't be from the past";
+        }
+        return "";
+    };
+
+    bool CanSearch() =>
+        _selectedOriginLocation is not null &&
+        _selectedOriginCollectionPoint is not null &&
+        _selectedDestinationLocation is not null &&
+        _selectedDestinationCollectionPoint is not null &&
+        _pickupDate is not null &&
+        _collis > 0 &&
+        _selectedSegment is not null;
+
+}

@@ -57,6 +57,7 @@ namespace FjordTours.App.DistributorApi.Infrastructure.State
                 .Concat(AccommodationProducts?.ToList() ?? new List<AccommodationProductDto>()).ToList()
                 .Concat(ActivityProducts?.ToList() ?? new List<ActivityProductDto>()).ToList()
                 .Concat(BundleProducts?.ToList() ?? new List<BundleProductDto>()).ToList()
+                .Concat(LuggageTransferProducts?.ToList() ?? new List<LuggageTransferProductDto>()).ToList()
                 .Concat(TransportProducts?.ToList() ?? new List<TransportProductDto>()).ToList();
 
         public IReadOnlyCollection<AccommodationProductDto>? AccommodationProducts { get; set; } = null;
@@ -66,6 +67,8 @@ namespace FjordTours.App.DistributorApi.Infrastructure.State
         public IReadOnlyCollection<BundleProductDto>? BundleProducts { get; set; } = null;
 
         public IReadOnlyCollection<TransportProductDto>? TransportProducts { get; set; } = null;
+
+        public IReadOnlyCollection<LuggageTransferProductDto>? LuggageTransferProducts { get; set; } = null;
 
         #endregion
 
