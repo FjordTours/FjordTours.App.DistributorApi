@@ -470,7 +470,7 @@ else
             _departureOptions is not null &&
             _departureOptions.Any())
         {
-            var travelers = Enumerable.Range(1, _numAdult)
+            var travelers = Enumerable.Range(0, _numAdult)
                 .Select(paxNumber => new OffersRequestTravelerDto{
                     PaxRph = paxNumber,
                     TicketTypeId = DistributorApiConstants.Adult
