@@ -45,6 +45,7 @@
                 <MudAutocomplete T="LocationDto" 
                                  Label="Origin" 
                                  @bind-Value="_selectedOrigin" 
+                                 Required="true"
                                  SearchFunc="@SearchOrigin"
                                  ToStringFunc="@(e => e==null ? null : $"{e.Name}")" />
             </MudItem>
@@ -52,14 +53,16 @@
                 <MudAutocomplete T="LocationDto"
                                  Label="Destination"
                                  @bind-Value="_selectedDestination"
+                                 Required="true"
                                  SearchFunc="@SearchDestination"
                                  ToStringFunc="@(e => e==null ? null : $"{e.Name}")" />
             </MudItem>
-            <MudItem xs="3">
+            <MudItem xs="2">
                 <MudDatePicker @ref="_formDatePicker"
                                @bind-Date="_travelDate"
                                Class="ma-2"
                                Label="Date"
+                               Required="true"
                                Editable="true"
                                Margin="Margin.Dense"
                                Mask="@(new DateMask("dd.MM.yyyy"))"
@@ -68,9 +71,18 @@
                                HelperTextOnFocus=true
                                Validation="@ValidateDate" />
             </MudItem>
-            <MudItem xs="3">
+            <MudItem xs="2">
+                <MudNumericField @bind-Value="_numAdult" 
+                                 Label="Adults" 
+                                 Required="true"
+                                 Variant="Variant.Text" 
+                                 Min="1" 
+                                 Max="10" />
+            </MudItem>
+            <MudItem xs="2">
                 <MudAutocomplete T="SegmentDto"
                                  Label="Segment"
+                                 Required="true"
                                  @bind-Value="_selectedSegment"
                                  SearchFunc="@SearchSegment"
                                  ToStringFunc="@(e => e==null ? null : $"{e.Name}")" />
@@ -319,6 +331,7 @@ else
     IEnumerable<LocationDto> _locations = new List<LocationDto>();
     LocationDto? _selectedOrigin = null;
     LocationDto? _selectedDestination = null;
+    int _numAdult = 1;
 
     bool _isInitializing = true;
     MudForm _form { get; set; } = default!;
@@ -457,6 +470,12 @@ else
             _departureOptions is not null &&
             _departureOptions.Any())
         {
+            var travelers = Enumerable.Range(1, _numAdult)
+                .Select(paxNumber => new OffersRequestTravelerDto{
+                    PaxRph = paxNumber,
+                    TicketTypeId = DistributorApiConstants.Adult
+                })
+                .ToList();
             foreach (var departureOption in _departureOptions)
             {
                 var offersResult = await ApiClient.GetTransportOffersAsync(
@@ -466,12 +485,7 @@ else
                         DestinationLocationId = _selectedDestination.Id,
                         DepartureDate = _travelDate.Value,
                         DepartureCode = departureOption.DepartureCode,
-                        Travelers = new List<OffersRequestTravelerDto>() {
-                        new OffersRequestTravelerDto() {
-                            PaxRph = 0,
-                            TicketTypeId = DistributorApiConstants.Adult
-                        }
-                    }
+                        Travelers = travelers
                 });
                 var offerData = offersResult?.Value;
                 if (offerData is not null)
