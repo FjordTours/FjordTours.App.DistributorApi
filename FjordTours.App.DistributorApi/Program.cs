@@ -34,9 +34,7 @@ namespace FjordTours.App.DistributorApi
 
             // BLAZOR
             builder.Services.AddSingleton<AppState>();
-            builder.Services.AddMudServices(options => {
-                options.PopoverOptions.CheckForPopoverProvider = false;
-            });
+            builder.Services.AddMudServices();
             builder.Services.AddBlazoredLocalStorage();
             builder.Services.AddMudMarkdownServices();
 
