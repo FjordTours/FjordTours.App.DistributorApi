@@ -18,7 +18,7 @@ Important note: this app does neither represent any best practices nor is it pro
 
 ### Technical
 
-- .Net 9 or higher
+- .Net 10 or higher
 
 ### Commercial
 
