@@ -1,9 +1,10 @@
 ﻿@page "/octo/supplier"
+
 @using FjordTours.App.DistributorApi.Components
-@using FjordTours.DistributorApi.Contracts.Octo
-@using FjordTours.DistributorApi.Proprietary.Contracts
 @using FjordTours.DistributorApi.Common.Constants
+@using FjordTours.DistributorApi.Contracts.Octo
 @using FjordTours.OCTO.Common.Dtos.Supplier
+
 @inherits AppProtectedPage
 
 <h1>OCTO API - Supplier</h1>
@@ -15,6 +16,12 @@
         <MudProgressCircular Color="Color.Primary"
                              Size="Size.Large"
                              Indeterminate="true" />
+    }
+    else if (!string.IsNullOrEmpty(_errorMessage))
+    {
+        <MudAlert Severity="Severity.Error">
+            @_errorMessage
+        </MudAlert>
     }
     else if (_supplier is null)
     {
@@ -64,14 +71,30 @@ else
     IOctoContract OctoClient { get; set; } = default!;
 
     bool _isLoading = false;
+    string? _errorMessage { get; set; } = null;
     SupplierDto? _supplier { get; set; } = null;
 
-    protected override async Task OnParametersSetAsync()
+    protected override async Task OnInitializedAsync()
     {
         _isLoading = true;
-        var supplierResult = await OctoClient.GetSupplierAsync();
-        _supplier = supplierResult;
-        _isLoading = false;
+        _errorMessage = null;
+        try
+        {
+            var supplierResult = await OctoClient.GetSupplierAsync();
+            _supplier = supplierResult;
+        }
+        catch (HttpRequestException ex)
+        {
+            _errorMessage = $"Failed to load supplier: {ex.Message}";
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = $"An unexpected error occurred: {ex.Message}";
+        }
+        finally
+        {
+            _isLoading = false;
+        }
     }
 
 }

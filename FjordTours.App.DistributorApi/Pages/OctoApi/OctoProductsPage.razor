@@ -1,10 +1,11 @@
 ﻿@page "/octo/products"
+
 @using FjordTours.App.DistributorApi.Components
 @using FjordTours.App.DistributorApi.Infrastructure.Extensions
-@using FjordTours.DistributorApi.Contracts.Octo
-@using FjordTours.DistributorApi.Proprietary.Contracts
 @using FjordTours.DistributorApi.Common.Constants
+@using FjordTours.DistributorApi.Contracts.Octo
 @using FjordTours.OCTO.Common.Dtos.Products
+
 @inherits AppProtectedPage
 
 <h1>OCTO API - Products</h1>
@@ -29,12 +30,13 @@
         <MudGrid>
             @foreach (var product in _products)
             {
-                var color = product.Id.StartsWith("activity")
-                    ? Color.Primary
-                    : Color.Info;
-                var abbr = product.Id.StartsWith("activity")
-                    ? "A"
-                    : "B";
+                var (color, abbr) = product.Id switch
+                {
+                    var id when id.StartsWith("activity") => (Color.Primary, "A"),
+                    var id when id.StartsWith("bundle") => (Color.Info, "B"),
+                    var id when id.StartsWith("transport") => (Color.Success, "T"),
+                    _ => (Color.Default, "?")
+                };
                 <MudItem xs="3">
                     <MudCard style="min-height: 100px;">
                         <MudCardHeader>
@@ -42,11 +44,17 @@
                                 <MudAvatar Color="color">@abbr</MudAvatar>
                             </CardHeaderAvatar>
                             <CardHeaderContent>
-                                <MudText Typo="Typo.h6">@product.InternalName</MudText>
+                                <MudText Typo="Typo.h6">@product.Title</MudText>
                                 <MudText Typo="Typo.button">@product.Id</MudText>
                             </CardHeaderContent>
                         </MudCardHeader>
                         <MudCardContent>
+                            <MudText>Short Description</MudText>
+                            <MudText Typo="Typo.button">@product.ShortDescription.ToHyphenIfNullOrEmpty()</MudText>
+
+                            <MudText>Description</MudText>
+                            <MudText Typo="Typo.button">@product.Description.ToHyphenIfNullOrEmpty()</MudText>
+
                             <MudText>SKU / Reference</MudText>
                             <MudText Typo="Typo.button">@product.SKU.ToHyphenIfNullOrEmpty()</MudText>
 
@@ -87,8 +95,14 @@
                                             <MudText>Id</MudText>
                                             <MudText Typo="Typo.button">@option.Id.ToHyphenIfNullOrEmpty()</MudText>
 
-                                            <MudText>Name</MudText>
-                                            <MudText Typo="Typo.button">@option.InternalName.ToHyphenIfNullOrEmpty()</MudText>
+                                            <MudText>Title</MudText>
+                                            <MudText Typo="Typo.button">@option.Title.ToHyphenIfNullOrEmpty()</MudText>
+
+                                            <MudText>Short Description</MudText>
+                                            <MudText Typo="Typo.button">@option.ShortDescription.ToHyphenIfNullOrEmpty()</MudText>
+
+                                            <MudText>Description</MudText>
+                                            <MudText Typo="Typo.button">@option.Description.ToHyphenIfNullOrEmpty()</MudText>
 
                                             <MudText>Is Default</MudText>
                                             <MudText Typo="Typo.button">@option.IsDefault.ToString()</MudText>
