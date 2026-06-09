@@ -1,13 +1,13 @@
 ﻿@page "/octo/activity/offers/{ProductId}/{OptionId}/{TravelDate:datetime}"
+
 @using FjordTours.App.DistributorApi.Components
-@using FjordTours.App.DistributorApi.Infrastructure.Constants
 @using FjordTours.App.DistributorApi.Infrastructure.Extensions
 @using FjordTours.App.DistributorApi.Infrastructure.State
-@using FjordTours.DistributorApi.Contracts.Octo
 @using FjordTours.DistributorApi.Common.Constants
-@using FjordTours.DistributorApi.Common.Enums
+@using FjordTours.DistributorApi.Contracts.Octo
 @using FjordTours.OCTO.Common.Dtos.Availability
 @using FjordTours.OCTO.Common.Enums
+
 @inherits AppProtectedPage
 
 <h1>Octo Api - Availabilities (Offers)</h1>
@@ -35,6 +35,7 @@
                     Availabilities/Offers are searched for one adult.
                 </MudAlert>
             </MudItem>
+
             <MudItem xs="12">
                 <h2>Order Data</h2>
                 <MudAlert Severity="Severity.Warning">
@@ -63,17 +64,19 @@
                 <MudText Typo="Typo.h6">Phone</MudText>
                 <MudText Typo="Typo.button">@_phone</MudText>
             </MudItem>
+
             <MudItem xs="12">
                 <h2>Offers</h2>
                 <MudGrid>
                     @foreach (var avail in _availabilities)
                     {
-                        var color = ProductId.StartsWith("activity")
-                            ? Color.Primary
-                            : Color.Info;
-                        var abbr = ProductId.StartsWith("activity")
-                            ? "A"
-                            : "B";
+                        var (color, abbr) = ProductId switch
+                        {
+                            var id when id.StartsWith("activity") => (Color.Primary, "A"),
+                            var id when id.StartsWith("bundle") => (Color.Info, "B"),
+                            var id when id.StartsWith("transport") => (Color.Success, "T"),
+                            _ => (Color.Default, "?")
+                        };
                         <MudItem xs="3">
                             <MudCard style="min-height: 100px;">
                                 <MudCardHeader>
@@ -82,12 +85,16 @@
                                     </CardHeaderAvatar>
                                     <CardHeaderContent>
                                         <MudText Typo="Typo.h6">@avail.Id</MudText>
+                                        <MudText Typo="Typo.h6">@avail.Title</MudText>
                                         <MudText Typo="Typo.button">@avail.AvailabilityStatus.ToString()</MudText>
                                     </CardHeaderContent>
                                 </MudCardHeader>
                                 <MudCardContent>
                                     <MudText>Start - End</MudText>
                                     <MudText Typo="Typo.button">@avail.LocalDateTimeStart.ToDateTimeString() - @avail.LocalDateTimeEnd.ToDateTimeString()</MudText>
+
+                                    <MudText>Short Description</MudText>
+                                    <MudText Typo="Typo.button">@avail.ShortDescription.ToHyphenIfNullOrEmpty()</MudText>
 
                                     <MudText>Availability</MudText>
                                     <MudText Typo="Typo.button">

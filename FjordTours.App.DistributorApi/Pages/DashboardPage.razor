@@ -7,38 +7,51 @@
 
 <PageTitle>Dashboard</PageTitle>
 
-<h1>Dashboard</h1>
+<MudGrid>
+    <MudItem xs="12">
+        <h1>Dashboard</h1>
+    </MudItem>
 
-<h2>Distributor</h2>
+    
+    <MudItem xs="12">
+        <MudAlert Severity="Severity.Warning">
+            Api is under development / experimental and support has not yet been added to this test / demo tool.
+        </MudAlert>
+    </MudItem>
 
-<MudAlert Severity="Severity.Info">
-    <h3>@AppState?.DistributorProfile?.Name.ToHyphenIfNullOrEmpty()</h3>
-    Registration Number: <b>@AppState?.DistributorProfile?.RegistrationNumber</b><br />
-    Current Contract type: <b>@AppState?.DistributorProfile?.CurrentContractType</b><br />
-</MudAlert>
+    <MudItem xs="12">
+        <h2>Distributor</h2>
 
+        <MudAlert Severity="Severity.Info">
+            <h3>@AppState?.DistributorProfile?.Name.ToHyphenIfNullOrEmpty()</h3>
+            Registration Number: <b>@AppState?.DistributorProfile?.RegistrationNumber</b><br />
+            Current Contract type: <b>@AppState?.DistributorProfile?.CurrentContractType</b><br />
+        </MudAlert>
+    </MudItem>
 
-<h2>Proprietary Api</h2>
+    <MudItem xs="12">
+        <h2>Proprietary Api</h2>
 
-<MudAlert Severity="Severity.Info">
-    Proprietary Api developed and provided by Fjord Tours.
-    Provides most flexibility, including management and configuration functionality.
-</MudAlert>
+        <MudAlert Severity="Severity.Info">
+            Proprietary Api developed and provided by Fjord Tours.
+            Provides most flexibility, including management and configuration functionality.
+        </MudAlert>
+    </MudItem>
 
+    <MudItem xs="12">
+        <h2>OCTO Api</h2>
 
-<h2>OCTO Api</h2>
+        <MudAlert Severity="Severity.Info">
+            OCTO is an industry standard for ours, activities & attractions.
+        </MudAlert>
+    </MudItem>
 
-<MudAlert Severity="Severity.Info">
-    OCTO is an industry standard for ours, activities & attractions.
-</MudAlert>
+    <MudItem xs="12">
+        <h2>OSDM Api</h2>
 
+        <MudAlert Severity="Severity.Info">
+            OSDM is the Open Sales and Distribution Model developed by various European rail and public transport providers.
+        </MudAlert>
+    </MudItem>
 
-<h2>OSDM Api</h2>
-
-<MudAlert Severity="Severity.Info">
-    OSDM is the Open Sales and Distribution Model developed by various European rail and public transport providers.
-</MudAlert>
-
-<MudAlert Severity="Severity.Warning">
-    Api is under development / experimental and support has not yet been added to this test / demo tool.
-</MudAlert>
+</MudGrid>

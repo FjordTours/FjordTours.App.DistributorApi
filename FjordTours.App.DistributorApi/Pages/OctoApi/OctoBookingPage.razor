@@ -1,11 +1,13 @@
 ﻿@page "/octo/booking/{BookingId}"
+
+@using System.Timers
 @using FjordTours.App.DistributorApi.Components
 @using FjordTours.App.DistributorApi.Infrastructure.Extensions
 @using FjordTours.App.DistributorApi.Infrastructure.State
-@using System.Timers
-@using FjordTours.DistributorApi.Contracts.Octo
 @using FjordTours.DistributorApi.Common.Constants
+@using FjordTours.DistributorApi.Contracts.Octo
 @using FjordTours.OCTO.Common.Dtos.Booking
+
 @inherits AppProtectedPage
 @implements IDisposable
 
